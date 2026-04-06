@@ -15,7 +15,12 @@ import {
   registerRuntimeAsset,
   resolveRuntimeAssetPreviewUrl,
 } from './core/runtime-assets.js';
-import { createProjectStore } from './core/project-store.js';
+import {
+  createProjectStore,
+  normalizeSaveFormat,
+  SAVE_FORMAT_EMBEDDED,
+  SAVE_FORMAT_LINKED,
+} from './core/project-store.js';
 import { createFrameEditor } from './editor/frame-editor.js';
 import {
   renderAssetTable,
@@ -47,7 +52,7 @@ let codeCompareTargetMode = 'draft';
 let lastCodeCompareResult = { baseKey: 'current-source', targetKey: 'draft', baseLabel: '현재 보기', targetLabel: '현재 초안', chunkCount: 0, changedLines: 0, addedLines: 0, removedLines: 0, truncated: false, chunks: [] };
 let codeWorkbenchDiagnostics = [];
 let geometryCoordMode = 'relative';
-let currentSaveFormat = 'linked';
+let currentSaveFormat = SAVE_FORMAT_LINKED;
 let lastSaveConversion = null;
 let advancedSettingsDirty = false;
 let lastFocusedBeforeShortcutHelp = null;
@@ -1137,10 +1142,6 @@ function currentExportPreset() {
   return getExportPresetById(currentExportPresetId);
 }
 
-function normalizeSaveFormat(value) {
-  return value === 'embedded' ? 'embedded' : 'linked';
-}
-
 function formatByteSize(bytes) {
   const safeBytes = Number(bytes);
   if (!Number.isFinite(safeBytes) || safeBytes <= 0) return '0 B';
@@ -1187,16 +1188,19 @@ function buildSaveMetaSummary() {
 }
 
 function syncSaveFormatUi() {
-  currentSaveFormat = normalizeSaveFormat(elements.saveFormatSelect?.value || currentSaveFormat);
+  currentSaveFormat = normalizeSaveFormat(store.getState().saveFormat || currentSaveFormat, {
+    allowEmbedded: true,
+    reason: 'explicit-user-choice',
+  });
   if (elements.saveFormatSelect && elements.saveFormatSelect.value !== currentSaveFormat) {
     elements.saveFormatSelect.value = currentSaveFormat;
   }
   if (elements.saveFormatStatus) {
-    const modeLabel = currentSaveFormat === 'embedded' ? 'embedded 전달용 (data URL 내장)' : 'linked 표준 (가볍고 재편집 권장)';
+    const modeLabel = currentSaveFormat === SAVE_FORMAT_EMBEDDED ? 'embedded 전달용 (data URL 내장)' : 'linked 표준 (가볍고 재편집 권장)';
     elements.saveFormatStatus.textContent = `현재 저장 포맷: ${modeLabel}`;
   }
   if (elements.saveFormatGuide) {
-    const purposeGuide = currentSaveFormat === 'embedded'
+    const purposeGuide = currentSaveFormat === SAVE_FORMAT_EMBEDDED
       ? '추천 안내: 1파일 전달/메신저 공유는 embedded가 편하지만, 이미지가 많으면 무거워질 수 있습니다.'
       : '추천 안내: 기본 저장은 linked를 권장합니다. 편집 중 성능과 재편집 안정성이 훨씬 좋습니다.';
     elements.saveFormatGuide.textContent = purposeGuide;
@@ -4907,14 +4911,18 @@ async function downloadLinkedZip() {
 async function downloadByFormat(format, { forceZip = false } = {}) {
   const project = store.getState().project;
   if (!project || !activeEditor) return setStatus('먼저 프로젝트를 불러와 주세요.');
-  const saveFormat = normalizeSaveFormat(format);
+  const allowEmbedded = format === SAVE_FORMAT_EMBEDDED;
+  const saveFormat = normalizeSaveFormat(format, {
+    allowEmbedded,
+    reason: allowEmbedded ? 'explicit-user-choice' : '',
+  });
   const result = await activeEditor.getSavePackageEntries(saveFormat);
   lastSaveConversion = {
     ...result.conversion,
     savedAt: new Date().toISOString(),
   };
 
-  if (saveFormat === 'embedded' && !forceZip) {
+  if (saveFormat === SAVE_FORMAT_EMBEDDED && !forceZip) {
     const entry = result.entries[0];
     const text = new TextDecoder().decode(entry.data);
     downloadTextFile(entry.name, text, 'text/html;charset=utf-8');
@@ -4924,7 +4932,7 @@ async function downloadByFormat(format, { forceZip = false } = {}) {
   }
 
   const zipBlob = await buildZipBlob(result.entries);
-  const suffix = saveFormat === 'embedded' ? '__embedded_package.zip' : '__linked_package.zip';
+  const suffix = saveFormat === SAVE_FORMAT_EMBEDDED ? '__embedded_package.zip' : '__linked_package.zip';
   const fileName = `${projectBaseName(project)}${suffix}`;
   downloadBlob(fileName, zipBlob);
   const warningCount = Number(result.conversion?.brokenLinkedPathWarnings?.length || 0);
@@ -5641,8 +5649,11 @@ for (const button of elements.downloadPresetButtons) {
   });
 }
 elements.saveFormatSelect?.addEventListener('change', () => {
-  currentSaveFormat = normalizeSaveFormat(elements.saveFormatSelect.value || 'linked');
-  syncSaveFormatUi();
+  currentSaveFormat = normalizeSaveFormat(elements.saveFormatSelect.value || SAVE_FORMAT_LINKED, {
+    allowEmbedded: true,
+    reason: 'explicit-user-choice',
+  });
+  store.setSaveFormat(currentSaveFormat, { allowEmbedded: true, reason: 'explicit-user-choice' });
   setStatus(`저장 포맷을 ${currentSaveFormat}로 변경했습니다.`);
 });
 bindElementEvent('downloadReportButton', 'click', downloadReportJson);

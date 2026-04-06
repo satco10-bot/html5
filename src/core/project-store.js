@@ -1,3 +1,13 @@
+export const SAVE_FORMAT_LINKED = 'linked';
+export const SAVE_FORMAT_EMBEDDED = 'embedded';
+const EXPLICIT_EMBEDDED_EXCEPTION_REASON = 'explicit-user-choice';
+
+export function normalizeSaveFormat(value, { allowEmbedded = false, reason = '' } = {}) {
+  if (value !== SAVE_FORMAT_EMBEDDED) return SAVE_FORMAT_LINKED;
+  if (allowEmbedded && reason === EXPLICIT_EMBEDDED_EXCEPTION_REASON) return SAVE_FORMAT_EMBEDDED;
+  return SAVE_FORMAT_LINKED;
+}
+
 export function createProjectStore() {
   const listeners = new Set();
   const state = {
@@ -8,6 +18,7 @@ export function createProjectStore() {
     imageApplyDiagnostic: null,
     currentView: 'preview',
     selectionMode: 'smart',
+    saveFormat: SAVE_FORMAT_LINKED,
   };
 
   function notify() {
@@ -30,6 +41,7 @@ export function createProjectStore() {
       imageApplyDiagnostic: state.imageApplyDiagnostic,
       currentView: state.currentView,
       selectionMode: state.selectionMode,
+      saveFormat: state.saveFormat,
     };
   }
 
@@ -81,6 +93,11 @@ export function createProjectStore() {
     notify();
   }
 
+  function setSaveFormat(format, options = {}) {
+    state.saveFormat = normalizeSaveFormat(format, options);
+    notify();
+  }
+
   function subscribe(listener) {
     listeners.add(listener);
     try {
@@ -101,6 +118,7 @@ export function createProjectStore() {
     setImageApplyDiagnostic,
     setView,
     setSelectionMode,
+    setSaveFormat,
     subscribe,
   };
 }
