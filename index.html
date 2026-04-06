@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>상세페이지 로컬 에디터</title>
+<link href="./styles.css" rel="stylesheet"/>
+<style>
+    .shortcut-help-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.58);
+      z-index: 999999;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+    .shortcut-help-panel {
+      width: min(560px, 94vw);
+      max-height: min(640px, 88vh);
+      overflow: auto;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.34);
+      background: #ffffff;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.3);
+      padding: 16px;
+    }
+    .shortcut-help-panel__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .shortcut-help-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 8px;
+    }
+    .shortcut-help-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .shortcut-help-list kbd {
+      display: inline-block;
+      min-width: 140px;
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      font: 600 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      color: #0f172a;
+      text-align: center;
+    }
+    .command-palette-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.58);
+      z-index: 999999;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+    .command-palette {
+      width: min(640px, 94vw);
+      max-height: min(680px, 88vh);
+      overflow: auto;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.34);
+      background: #ffffff;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.3);
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+    .command-palette__list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+    }
+    .command-palette__item {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px;
+      display: grid;
+      gap: 4px;
+    }
+    .command-palette__item.is-active {
+      border-color: #2563eb;
+      background: #eff6ff;
+    }
+  </style>
+</head>
+<body>
+<section class="app-launcher" id="appLauncher">
+<div class="app-launcher__panel">
+<div class="app-launcher__header">
+<p class="app-launcher__eyebrow">빠른 시작</p>
+<h2>무엇을 시작할까요?</h2>
+<p>이 앱은 <code>file://</code>에서 바로 실행되는 로컬 편집기입니다. 서버 없이 HTML 파일을 열어 편집할 수 있어요.</p>
+</div>
+<div class="app-launcher__cards">
+<button class="launcher-card" data-launch-fixture="F01" id="launcherNewButton" type="button">
+<strong>새로 만들기</strong>
+<span>빈 860px 템플릿(F01)으로 바로 시작</span>
+</button>
+<button class="launcher-card" id="launcherUploadButton" type="button">
+<strong>HTML 업로드</strong>
+<span>내 컴퓨터의 .html 파일을 열기</span>
+</button>
+<button class="launcher-card" id="launcherRecentButton" type="button">
+<strong>최근 작업 열기</strong>
+<span>자동저장본이 있으면 이어서 작업</span>
+</button>
+</div>
+<div class="app-launcher__quick">
+<h3>대표 fixture 빠른 시작</h3>
+<div class="app-launcher__quick-grid">
+<button class="fixture-quick-card" data-launch-fixture="F01" type="button">
+<strong>F01</strong>
+<span>Blank Builder · 슬롯 3개</span>
+</button>
+<button class="fixture-quick-card" data-launch-fixture="F05" type="button">
+<strong>F05</strong>
+<span>실사용 샘플 · 혼합 슬롯/이미지</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<div class="app-shell" data-shell-version="miricanvas-overhaul-v1" hidden="" id="appShell">
+<header class="topbar topbar--compact-shell">
+<div class="topbar__left">
+<div class="topbar__brand topbar__brand--compact"><div class="topbar__docline"><strong id="topbarDocTitle">문서 없음</strong></div></div>
+</div>
+<div class="topbar__center topbar__center--hidden" hidden="">
+<label class="workflow-guide-picker" for="workflowGuideSelect">
+<span>진행 안내</span>
+<select id="workflowGuideSelect">
+<option value="load">1) 불러오기</option>
+<option value="edit">2) 편집</option>
+<option value="save">3) 저장/출력</option>
+</select>
+</label>
+<p class="workflow-guide" id="workflowGuideLine">HTML 파일이나 폴더를 먼저 불러오세요.</p>
+</div>
+<div class="topbar__right">
+<button aria-pressed="false" class="button button--secondary" id="beginnerModeToggle" type="button">초보 모드: OFF</button>
+<div class="topbar__group">
+<span class="topbar__label">열기</span>
+<button class="button" id="openHtmlButton">HTML 열기</button>
+<button class="button button--secondary" data-beginner-more-item="load" id="openFolderButton">폴더 열기</button>
+<label class="mini-control" data-beginner-more-item="load">
+<span>Fixture</span>
+<select id="fixtureSelect"></select>
+</label>
+<button class="button button--ghost" data-beginner-more-item="load" id="loadFixtureButton">불러오기</button>
+<details class="topbar__more" data-beginner-more-group="load">
+<summary>더보기</summary>
+<div class="topbar__more-menu" data-beginner-more-target="load"></div>
+</details>
+</div>
+<div class="topbar__group">
+<span class="topbar__label">저장 / 출력</span>
+<button class="button" id="openDownloadModalButton">저장/출력 열기</button>
+<button class="button button--secondary" data-beginner-more-item="save" data-download-action="save-edited" id="downloadEditedButton">문서 저장</button>
+<button class="button button--ghost" data-beginner-more-item="save" data-download-action="export-full-png" id="exportPngButton">PNG</button>
+<button class="button button--ghost" data-beginner-more-item="save" data-download-action="export-full-jpg" id="exportJpgButton">JPG</button>
+<details class="topbar__more" data-beginner-more-group="save">
+<summary>더보기</summary>
+<div class="topbar__more-menu" data-beginner-more-target="save"></div>
+</details>
+</div>
+<div class="topbar__group topbar__group--workspace">
+<span class="topbar__label">작업</span>
+<button class="button" id="undoButton">되돌리기</button>
+<button class="button button--secondary" data-beginner-more-item="workspace" id="redoButton">다시하기</button>
+<button class="button button--ghost" data-beginner-more-item="workspace" id="restoreAutosaveButton">자동저장 복구</button>
+<button class="button button--ghost" data-beginner-more-item="workspace" id="saveProjectSnapshotButton">스냅샷 저장</button>
+<button class="button button--ghost" data-beginner-more-item="workspace" id="toggleLeftSidebarButton">왼쪽 패널</button>
+<button class="button button--ghost" data-beginner-more-item="workspace" id="toggleRightSidebarButton">섹션</button>
+<button class="button button--ghost" data-beginner-more-item="workspace" id="focusModeButton">캔버스 집중</button>
+<details class="topbar__more" data-beginner-more-group="workspace">
+<summary>더보기</summary>
+<div class="topbar__more-menu" data-beginner-more-target="workspace"></div>
+</details>
+</div>
+</div>
+<details class="topbar-advanced" data-beginner-advanced="" hidden="" id="advancedTopbarPanel">
+<summary>고급 펼치기</summary>
+<div class="topbar__group">
+<span class="topbar__label">고급 저장 / 출력</span>
+</div>
+</details>
+</header>
+<aside class="sidebar sidebar--left sidebar--rail-layout" id="leftSidebar"><div class="sidebar-tabs tool-rail"><button class="sidebar-tab is-active" data-sidebar-tab="left-start" type="button"><span class="sidebar-tab__icon">⌂</span><span class="sidebar-tab__label">파일</span></button><button class="sidebar-tab" data-sidebar-tab="left-image" type="button"><span class="sidebar-tab__icon">🖼</span><span class="sidebar-tab__label">업로드</span></button><button class="sidebar-tab" data-sidebar-tab="left-text" type="button"><span class="sidebar-tab__icon">＋</span><span class="sidebar-tab__label">추가</span></button><button class="sidebar-tab" data-sidebar-tab="left-properties" type="button"><span class="sidebar-tab__icon">✎</span><span class="sidebar-tab__label">속성</span></button><button class="sidebar-tab" data-sidebar-tab="left-theme" type="button"><span class="sidebar-tab__icon">🎨</span><span class="sidebar-tab__label">테마</span></button><button class="sidebar-tab" data-sidebar-tab="left-layers" type="button"><span class="sidebar-tab__icon">☰</span><span class="sidebar-tab__label">레이어</span></button><button class="sidebar-tab" data-sidebar-tab="left-diagnostics" type="button"><span class="sidebar-tab__icon">⚠</span><span class="sidebar-tab__label">검사</span></button><button class="sidebar-tab" data-sidebar-tab="left-export" type="button"><span class="sidebar-tab__icon">⇩</span><span class="sidebar-tab__label">출력</span></button><button class="sidebar-tab" data-sidebar-tab="left-settings" type="button"><span class="sidebar-tab__icon">⚙</span><span class="sidebar-tab__label">설정</span></button></div><div class="tool-workpanel"><section class="panel sidebar-panel is-active" data-sidebar-panel="left-start">
+<div class="panel-step-guide" data-left-tab-guide-for="left-start"></div>
+<div class="panel__header">
+<h2>파일 / 시작</h2>
+<button class="button button--secondary button--small" id="applyPasteButton">붙여넣기 적용</button>
+</div>
+<div id="localModeNotice"></div>
+<div class="form-grid form-grid--spaced">
+<label class="field">
+<span>붙여넣기 HTML</span>
+<textarea id="htmlPasteInput" placeholder="기존 상세페이지 HTML을 붙여넣어 주세요." rows="12"></textarea>
+</label>
+</div>
+<p class="hint">HTML 파일 기반 편집과 캔버스 편집을 한 문서 안에서 오갈 수 있습니다.</p>
+<div class="html-flow-card">
+<div class="html-flow-card__title"><strong>HTML ↔ 캔버스</strong><span>시각 편집과 코드 편집을 바로 왕복합니다.</span></div>
+<div class="button-row button-row--compact html-flow-card__actions">
+<button class="button button--secondary button--small" id="syncCodeFromCanvasQuickButton" type="button">캔버스 → HTML</button>
+<button class="button button--secondary button--small" id="applyCodeFromPanelButton" type="button">HTML → 캔버스</button>
+<button class="button button--ghost button--small" id="openCodeWorkbenchButton" type="button">코드 패널 열기</button>
+</div>
+<div class="mini-summary" id="codeFlowState">편집 후 코드를 갱신하거나, 코드를 적용해 캔버스로 돌아올 수 있습니다.</div>
+</div>
+<div class="panel-divider"></div>
+<section class="upload-bucket">
+<h3>프로젝트 스냅샷(타임머신)</h3>
+<div class="snapshot-composer">
+<input class="asset-filter" id="snapshotNameInput" maxlength="40" placeholder="예: 어제 최종안" type="text"/>
+<button class="button button--secondary button--small" id="saveSnapshotFromPanelButton">시점 저장</button>
+</div>
+<p class="hint">복원 버튼을 누르면 현재 상태를 자동 백업한 뒤 해당 시점으로 이동합니다.</p>
+<div class="snapshot-list" id="snapshotList"></div>
+</section>
+<details class="left-accordion" id="leftStartAdvancedDetails">
+<summary><strong>고급</strong> · 코드/진단</summary>
+<div class="left-accordion__body">
+<details class="left-accordion" id="codeWorkbenchDetails">
+<summary>코드 워크벤치</summary>
+<div class="left-accordion__body">
+<div class="panel__header panel__header--split">
+<h2>코드 워크벤치</h2>
+<div class="button-row button-row--compact">
+<button class="button button--ghost button--small" id="reloadCodeFromEditorButton">현재 편집본 불러오기</button>
+<button class="button button--secondary button--small" id="safeApplyCodeButton">안전 적용</button>
+<button class="button button--secondary button--small" id="applyCodeToEditorButton">코드 적용</button>
+</div>
+</div>
+<div class="segmented segmented--small">
+<button class="segmented__item is-active" data-code-source="edited">편집본</button>
+<button class="segmented__item" data-code-source="normalized">정규화</button>
+<button class="segmented__item" data-code-source="original">원본</button>
+<button class="segmented__item" data-code-source="report">리포트</button>
+</div>
+<div class="code-workbench-meta">
+<div class="code-workbench-meta__row">
+<span class="code-state-pill" id="codeDraftBadge">동기화</span>
+<span class="mini-summary" id="codeCursorInfo">1줄 · 1칸</span>
+<span class="mini-summary" id="codeSyncStats">0줄 · 0자</span>
+</div>
+<div class="code-diff-summary" id="codeDiffSummary">현재 보기와 차이가 없습니다.</div>
+<div class="code-validation-list" id="codeValidationList"></div>
+<div class="code-compare-panel">
+<div class="code-compare-panel__header">
+<strong>비교 보기</strong>
+<details class="code-compare-advanced" id="codeCompareAdvancedDetails">
+<summary>직접 선택</summary>
+<div class="code-compare-panel__controls">
+<label class="field field--mini">
+<span>기준</span>
+<select id="codeCompareBaseSelect">
+<option value="current-source">현재 보기</option>
+<option value="draft">현재 초안</option>
+<option value="edited">편집본</option>
+<option value="normalized">정규화</option>
+<option value="original">원본</option>
+</select>
+</label>
+<label class="field field--mini">
+<span>비교</span>
+<select id="codeCompareTargetSelect">
+<option value="draft">현재 초안</option>
+<option value="current-source">현재 보기</option>
+<option value="edited">편집본</option>
+<option value="normalized">정규화</option>
+<option value="original">원본</option>
+</select>
+</label>
+<button class="button button--ghost button--small" id="codeCompareSwapButton" type="button">바꾸기</button>
+</div>
+</details>
+</div>
+<div class="code-compare-summary" id="codeCompareSummary">비교 기준을 선택하면 변경 덩어리를 바로 볼 수 있습니다.</div>
+<div class="code-compare-presets-compact" id="codeComparePresetRow"><label class="field field--mini"><span>빠른 비교</span><select id="codeComparePresetSelect"><option value="edited-vs-original">편집본 ↔ 원본</option><option value="edited-vs-normalized">편집본 ↔ 정규화</option><option value="draft-vs-current">초안 ↔ 현재 보기</option></select></label><div class="button-row button-row--compact"><button class="button button--ghost button--small" id="applyCodeComparePresetButton" type="button">적용</button><button class="button button--ghost button--small" id="codeCompareIssuesOnlyButton" type="button">이슈 연결만</button><button class="button button--ghost button--small" id="codeCompareColorOnlyButton" type="button">색상 변경만</button></div></div>
+<div class="mini-summary" id="codeApplyImpactSummary">코드 변경 영향 범위가 아직 없습니다.</div>
+<div class="code-compare-list" id="codeCompareList"></div>
+</div>
+</div>
+<div class="code-toolbar">
+<input class="asset-filter" id="codeSearchInput" placeholder="코드 검색" type="search"/>
+<button class="button button--ghost button--small" id="codeSearchNextButton">다음</button>
+<button class="button button--ghost button--small" id="codeJumpFirstChangeButton">첫 변경 줄</button>
+<button class="button button--ghost button--small" id="codeJumpTopButton">맨 위</button>
+<button class="button button--secondary button--small" id="codeValidateButton">적용 전 검사</button>
+</div>
+<textarea class="code-editor" id="codeEditorTextarea" spellcheck="false"></textarea>
+<pre class="code-view code-view--hidden" id="editedCodeView"></pre>
+<pre class="code-view code-view--hidden" id="normalizedCodeView"></pre>
+<pre class="code-view code-view--hidden" id="originalCodeView"></pre>
+<pre class="code-view code-view--hidden" id="jsonReportView"></pre>
+<p class="hint">검색은 다음 일치 위치로 이동하고, 적용 전 검사는 구조 위험을 빠르게 확인합니다.</p>
+</div>
+</details>
+<details class="left-accordion">
+<summary>프로젝트 상태</summary>
+<div class="left-accordion__body">
+<div class="panel__header">
+<h2>프로젝트 상태</h2>
+</div>
+<div class="metric-grid" id="summaryCards"></div>
+<div class="panel-divider"></div>
+<div class="panel__header">
+<h2>이슈</h2>
+</div>
+<ul class="issue-list" id="issueList"></ul>
+</div>
+</details>
+</div>
+</details>
+</section><section class="panel sidebar-panel" data-sidebar-panel="left-image"><div class="panel__header panel__header--split"><h2>업로드 자산</h2><button class="button button--ghost button--small" data-app-action="refresh-assets" type="button">새로고침</button></div><p class="hint">업로드한 이미지를 바로 슬롯으로 드래그해 넣을 수 있습니다.</p><section class="upload-bucket upload-bucket--library"><h3>드래그 가능한 이미지</h3><p class="hint">이미지를 드래그해 슬롯에 바로 넣거나, 슬롯 선택 후 클릭해서 교체할 수 있습니다.</p><div class="upload-asset-grid" id="uploadAssetLibrary"></div></section><section class="upload-bucket">
+<h3>최근 업로드</h3>
+<div class="upload-slot-list" id="uploadRecentList"></div>
+</section><section class="upload-bucket">
+<h3>문서 사용</h3>
+<div class="upload-slot-list" id="uploadDocumentList"></div>
+</section><section class="upload-bucket">
+<h3>미할당</h3>
+<div class="upload-slot-list" id="uploadUnassignedList"></div>
+</section><section class="upload-bucket">
+<h3>깨진 자산</h3>
+<div class="upload-slot-list" id="uploadBrokenList"></div>
+</section></section><section class="panel sidebar-panel" data-sidebar-panel="left-text"><div class="panel__header panel__header--split"><h2>추가 / 빠른 편집</h2><div class="mini-summary">핵심 액션</div></div><p class="hint">새 요소 추가와 자주 쓰는 편집 명령을 한곳에 모았습니다.</p><div class="quick-actions button-row action-cluster action-cluster--primary">
+<button class="button button--secondary" id="replaceImageButton">이미지 넣기</button>
+<button class="button button--ghost" id="addTextButton" title="텍스트 도구 (T)">텍스트 추가</button>
+<button class="button button--ghost" id="addSlotButton">슬롯 추가</button>
+<button class="button button--ghost" id="duplicateButton">복제</button>
+<button class="button button--warn" id="deleteButton">삭제</button>
+<details class="left-accordion left-accordion--inline" id="leftActionMoreDetails"><summary>··· 더보기</summary><div class="left-accordion__body compact-grid"><button class="button button--ghost button--small" id="manualSlotButton">슬롯 지정</button><button class="button button--warn button--small" id="demoteSlotButton">슬롯 해제</button><button class="button button--ghost button--small" id="addBoxButton" title="박스 도구 (R)">박스 추가</button><button class="button button--ghost button--small" id="groupButton" title="그룹 묶기 (Ctrl/Cmd+G)">그룹 묶기</button><button class="button button--ghost button--small" id="ungroupButton" title="그룹 해제 (Shift+Ctrl/Cmd+G)">그룹 해제</button><button class="button button--ghost button--small" id="toggleHideButton">숨김</button><button class="button button--ghost button--small" id="toggleLockButton">잠금</button><button class="button button--ghost button--small" id="toggleImageLockButton">이미지 잠금</button><button class="button button--ghost button--small" id="redetectButton">다시 감지</button><button class="button button--ghost button--small" id="textEditButton">텍스트</button></div></details>
+</div><div class="left-block"><h3>이미지 배치</h3><div class="image-preset-compact"><label class="field field--mini"><span>이미지 배치</span><select id="imagePresetSelect"><option value="cover">꽉 채우기</option><option value="contain">맞춤 넣기</option><option value="top">상단</option><option value="center">가운데</option><option value="bottom">하단</option></select></label><div class="button-row button-row--compact"><button class="button button--ghost button--small" id="applyImagePresetButton" type="button">적용</button><button class="button button--ghost button--small" id="removeImageActionButton" type="button">복구/제거</button></div></div></div><details class="left-accordion" open=""><summary>정밀 배치</summary><div class="left-accordion__body"><div class="canvas-context-bar__fine">
+<label class="field field--mini">
+<span>X</span>
+<input id="canvasGeometryXInput" step="1" type="number"/>
+</label>
+<label class="field field--mini">
+<span>Y</span>
+<input id="canvasGeometryYInput" step="1" type="number"/>
+</label>
+<label class="field field--mini">
+<span>W</span>
+<input id="canvasGeometryWInput" min="8" step="1" type="number"/>
+</label>
+<label class="field field--mini">
+<span>H</span>
+<input id="canvasGeometryHInput" min="8" step="1" type="number"/>
+</label>
+<button class="button button--secondary button--small" id="applyCanvasGeometryButton">숫자 적용</button>
+</div></div></details></section><section class="panel sidebar-panel" data-sidebar-panel="left-properties"><div class="panel__header panel__header--split"><h2>속성</h2><div class="mini-summary" id="inspectorContextBadge">선택 없음</div></div><div class="selection-empty-state" hidden="" id="selectionEmptyState">
+<strong>먼저 요소를 클릭하세요</strong>
+<p>캔버스에서 요소를 선택하면 이 패널이 해당 타입에 맞게 바로 바뀝니다.</p>
+</div><div class="selection-context-card" hidden="" id="selectionContextCard">
+<div class="selection-context-card__header">
+<div>
+<strong id="selectionContextTitle">선택 없음</strong>
+<div class="mini-summary" id="selectionContextMeta">선택하면 여기서 핵심 정보를 바로 확인할 수 있습니다.</div>
+</div>
+<div class="selection-context-card__chips" id="selectionContextChips"></div>
+</div>
+<p class="selection-context-card__hint" id="selectionContextHint">요소를 선택하면 타입에 맞는 속성과 빠른 작업이 아래에 나타납니다.</p>
+</div><section class="panel inspector-context inspector-context--text" id="leftInspectorTextSection">
+<div class="panel__header panel__header--split">
+<h2>텍스트 스타일</h2>
+<div class="mini-summary" id="textStyleSummary">텍스트 미선택</div>
+</div>
+<div class="style-form">
+<div class="style-grid">
+<label class="field field--mini">
+<span>글자 크기</span>
+<input id="textFontSizeInput" min="8" placeholder="px" step="1" type="number"/>
+</label>
+<label class="field field--mini">
+<span>줄간격</span>
+<input id="textLineHeightInput" min="0.8" placeholder="1.5" step="0.05" type="number"/>
+</label>
+<label class="field field--mini">
+<span>자간</span>
+<input id="textLetterSpacingInput" placeholder="em" step="0.01" type="number"/>
+</label>
+<label class="field field--mini">
+<span>굵기</span>
+<select id="textWeightSelect">
+<option value="">유지</option>
+<option value="400">400</option>
+<option value="500">500</option>
+<option value="600">600</option>
+<option value="700">700</option>
+<option value="800">800</option>
+<option value="900">900</option>
+</select>
+</label>
+<label class="field field--mini field--color">
+<span>글자색</span>
+<input id="textColorInput" type="color" value="#333333"/>
+</label>
+</div>
+<label class="field field--mini text-align-select-field">
+<span>정렬</span>
+<select id="textAlignSelect">
+<option value="">유지</option>
+<option value="left">왼쪽</option>
+<option value="center">가운데</option>
+<option value="right">오른쪽</option>
+</select>
+</label>
+<div class="button-row">
+<button class="button button--secondary" id="applyTextStyleButton">텍스트 스타일 적용</button>
+<button class="button button--ghost" id="clearTextStyleButton">텍스트 스타일 비우기</button>
+</div>
+</div>
+</section><section class="panel inspector-context inspector-context--image" hidden="" id="leftInspectorImageSection">
+<div class="panel__header panel__header--split">
+<h2>이미지 / 슬롯</h2>
+<div class="mini-summary" id="imageInspectorSummary">이미지 미선택</div>
+</div>
+<p class="hint" id="imageInspectorHint">슬롯을 선택하면 교체, 크롭, 배치, 잠금을 이곳에서 바로 다룹니다.</p>
+<div class="button-row">
+<button class="button button--secondary" id="inspectorReplaceImageButton">이미지 교체</button>
+<button class="button button--ghost" id="inspectorCropModeButton">크롭 모드</button>
+<button class="button button--ghost" id="inspectorRemoveImageButton">복구/제거</button>
+</div>
+<div class="button-row button-row--compact inspector-preset-row">
+<button class="button button--ghost button--small" id="inspectorPresetCoverButton">꽉 채우기</button>
+<button class="button button--ghost button--small" id="inspectorPresetContainButton">맞춤 넣기</button>
+<button class="button button--ghost button--small" id="inspectorPresetTopButton">상단</button>
+<button class="button button--ghost button--small" id="inspectorPresetCenterButton">가운데</button>
+<button class="button button--ghost button--small" id="inspectorPresetBottomButton">하단</button>
+</div>
+<div class="button-row button-row--compact">
+<button class="button button--ghost button--small" id="inspectorImageLockButton">이미지 잠금</button>
+<button class="button button--ghost button--small" id="inspectorRedetectButton">다시 감지</button>
+</div>
+<div class="nudge-grid">
+<button class="button button--ghost button--small" id="inspectorImageNudgeLeftButton">←</button>
+<button class="button button--ghost button--small" id="inspectorImageNudgeUpButton">↑</button>
+<button class="button button--ghost button--small" id="inspectorImageNudgeDownButton">↓</button>
+<button class="button button--ghost button--small" id="inspectorImageNudgeRightButton">→</button>
+</div>
+</section><details class="left-accordion left-accordion--inline" id="styleColorStudioSection" open="">
+<summary><strong>스타일 컬러 스튜디오</strong> · HTML 색상 빠른 교체</summary>
+<div class="left-accordion__body">
+<p class="hint">style 블록과 inline style에 직접 적힌 색상을 모아서 한 번에 바꿉니다. 문서 전체 또는 현재 선택 섹션 범위로 좁힐 수 있습니다.</p>
+<div class="control-row control-row--split style-color-toolbar">
+<label class="field field--mini">
+<span>범위</span>
+<select id="styleColorScopeSelect">
+<option value="document">문서 전체</option>
+<option value="selected-section">선택 섹션</option>
+</select>
+</label>
+<div class="button-row button-row--compact">
+<button class="button button--ghost button--small" id="refreshStyleColorButton" type="button">다시 읽기</button>
+<button class="button button--secondary button--small" id="applyStyleColorButton" type="button">색상 적용</button>
+</div>
+</div>
+<div class="mini-summary" id="styleColorSummary">style 블록과 inline style에서 색상을 읽어오면 여기 표시됩니다.</div>
+<div class="style-color-list" id="styleColorList"></div>
+</div>
+</details>
+<details class="left-accordion left-accordion--inline" id="cssTokenEditorSection">
+<summary><strong>CSS 변수 / 컬러 토큰</strong> · HTML 특화</summary>
+<div class="left-accordion__body">
+<p class="hint">:root와 style 블록에 있는 컬러 토큰을 한 번에 수정합니다. 토큰은 전체 테마를 바꾸고, 위 컬러 스튜디오는 개별 스타일 색상까지 다룹니다.</p>
+<div class="button-row button-row--compact">
+<button class="button button--ghost button--small" id="refreshCssTokenButton" type="button">다시 읽기</button>
+<button class="button button--secondary button--small" id="applyCssTokenButton" type="button">토큰 적용</button>
+</div>
+<div class="css-token-list" id="cssTokenList"></div>
+</div>
+</details>
+<details class="left-accordion left-accordion--inline" id="styleTokenEditorSection">
+<summary><strong>typography / spacing / radius / shadow 토큰</strong> · 확장 편집기</summary>
+<div class="left-accordion__body">
+<p class="hint">컬러 외에 글꼴/간격/라운드/그림자 토큰도 한 번에 수정합니다. HTML/CSS에 직접 박힌 디자인 토큰을 빠르게 조정할 때 유용합니다.</p>
+<div class="button-row button-row--compact">
+<button class="button button--ghost button--small" id="refreshDesignTokenButton" type="button">다시 읽기</button>
+<button class="button button--secondary button--small" id="applyDesignTokenButton" type="button">토큰 적용</button>
+</div>
+<div class="mini-summary" id="designTokenSummary">디자인 토큰을 읽으면 여기 요약이 표시됩니다.</div>
+<div class="css-token-list" id="designTokenList"></div>
+</div>
+</details>
+<details class="left-accordion left-accordion--inline" id="inlineColorExtractSection">
+<summary><strong>반복 inline 색상 → CSS 변수 추출</strong> · 자동 정리</summary>
+<div class="left-accordion__body">
+<p class="hint">inline style에 반복된 색상을 찾아 CSS 변수로 승격합니다. 동일 색이 여러 슬롯/박스에 박혀 있을 때 유지보수가 쉬워집니다.</p>
+<div class="button-row button-row--compact">
+<button class="button button--ghost button--small" id="refreshInlineColorExtractButton" type="button">다시 읽기</button>
+<button class="button button--secondary button--small" id="extractInlineColorVarsButton" type="button">CSS 변수로 추출</button>
+</div>
+<div class="mini-summary" id="inlineColorExtractSummary">반복 inline 색상이 있으면 여기서 CSS 변수로 정리할 수 있습니다.</div>
+<div class="css-token-list" id="inlineColorExtractList"></div>
+</div>
+</details>
+<details class="left-accordion left-accordion--inline" id="sectionThemePaletteSection">
+<summary><strong>섹션별 테마 팔레트</strong> · 선택 섹션 우선</summary>
+<div class="left-accordion__body">
+<p class="hint">선택한 섹션에서 많이 쓰는 색을 팔레트로 묶어 보여줍니다. 상세페이지 섹션별 톤 조정이나 CTA/배지 색 수정에 유용합니다.</p>
+<div class="button-row button-row--compact">
+<button class="button button--ghost button--small" id="refreshSectionThemeButton" type="button">다시 읽기</button>
+<button class="button button--secondary button--small" id="applySectionThemeButton" type="button">선택 섹션 팔레트 적용</button>
+</div>
+<div class="mini-summary" id="sectionThemePaletteSummary">섹션을 선택하면 테마 팔레트를 읽어옵니다.</div>
+<div class="section-theme-palette-list" id="sectionThemePaletteList"></div>
+</div>
+</details>
+<details class="left-accordion left-accordion--inline" id="slotSchemaSection">
+<summary><strong>슬롯 schema / 라벨</strong> · 자동 생성</summary>
+<div class="left-accordion__body">
+<p class="hint">현재 감지된 슬롯에 섹션 기준 라벨과 schema를 자동 부여합니다. 저장 HTML에는 <code>data-slot-label</code>, <code>data-slot-schema</code>, <code>data-image-slot</code>이 같이 남습니다.</p>
+<div class="button-row button-row--compact">
+<button class="button button--secondary button--small" id="generateSlotSchemaButton" type="button">자동 생성</button>
+</div>
+<div class="mini-summary" id="slotSchemaSummary">슬롯을 감지하면 여기서 자동 schema를 만들 수 있습니다.</div>
+</div>
+</details>
+<section class="panel inspector-context inspector-context--arrange" id="leftInspectorArrangeSection">
+<div class="panel__header panel__header--split">
+<h2>정렬 / 간격</h2>
+<div class="mini-summary" id="batchSelectionSummary">1개 이하 선택</div>
+</div>
+<details class="style-form" id="basicAttributeSection" open="">
+<summary><strong>기본</strong> · 위치/크기/레이어/잠금</summary>
+<div class="style-grid">
+<label class="field field--mini">
+<span title="요소의 가로 위치(px). 입력 즉시 반영됩니다.">X</span>
+<input id="geometryXInput" step="1" title="요소의 가로 위치(px). 입력 즉시 반영됩니다." type="number"/>
+</label>
+<label class="field field--mini">
+<span title="요소의 세로 위치(px). 입력 즉시 반영됩니다.">Y</span>
+<input id="geometryYInput" step="1" title="요소의 세로 위치(px). 입력 즉시 반영됩니다." type="number"/>
+</label>
+<label class="field field--mini">
+<span title="요소 너비(px). 최소 8px입니다.">W</span>
+<input id="geometryWInput" min="8" step="1" title="요소 너비(px). 최소 8px입니다." type="number"/>
+</label>
+<label class="field field--mini">
+<span title="요소 높이(px). 최소 8px입니다.">H</span>
+<input id="geometryHInput" min="8" step="1" title="요소 높이(px). 최소 8px입니다." type="number"/>
+</label>
+</div>
+<div class="button-row">
+<button class="button button--secondary" id="applyGeometryButton" title="기본값이 즉시 반영되지만, 버튼으로도 한 번 더 적용할 수 있습니다.">XYWH 적용</button>
+<button class="button button--ghost" id="bringForwardButton" title="선택 요소를 한 단계 앞으로 이동합니다.">앞으로</button>
+<button class="button button--ghost" id="sendBackwardButton" title="선택 요소를 한 단계 뒤로 이동합니다.">뒤로</button>
+<button class="button button--ghost" id="bringToFrontButton" title="선택 요소를 가장 앞으로 이동합니다.">맨앞</button>
+<button class="button button--ghost" id="sendToBackButton" title="선택 요소를 가장 뒤로 이동합니다.">맨뒤</button>
+</div>
+<div class="button-row">
+<button class="button button--ghost button--small" id="arrangeToggleHideButton" title="선택 요소를 숨기거나 다시 보이게 전환합니다.">숨김 전환</button>
+<button class="button button--ghost button--small" id="arrangeToggleLockButton" title="선택 요소를 잠그거나 잠금 해제합니다.">잠금 전환</button>
+</div>
+</details>
+<details class="style-form" id="advancedAttributeSection">
+<summary><strong>고급</strong> · 변환/진단 (적용 버튼)</summary>
+<label class="field">
+<span title="좌표 계산 기준입니다. 상대/절대를 먼저 설정하고 적용 버튼을 누르세요.">좌표 기준</span>
+<select id="geometryCoordModeSelect" title="좌표 계산 기준입니다. 상대/절대를 먼저 설정하고 적용 버튼을 누르세요.">
+<option value="relative">상대 좌표 (요소 이동값)</option>
+<option value="absolute">절대 좌표 (문서 좌상단 기준)</option>
+</select>
+</label>
+<div class="mini-summary" id="geometryRuleHint">다중 선택에서 값이 다르면 "혼합"으로 표시됩니다.</div>
+<div class="button-row">
+<button class="button button--secondary" id="applyAdvancedSettingsButton" title="고급값(좌표기준/export/진단)을 한 번에 반영합니다.">고급값 적용</button>
+<span class="mini-summary" id="advancedSettingsState">고급값 대기 없음</span>
+</div>
+<div class="button-row">
+<button class="button button--ghost button--small" id="imageNudgeLeftButton" title="선택 이미지의 내부 위치를 왼쪽으로 2px 이동합니다.">이미지 ←</button>
+<button class="button button--ghost button--small" id="imageNudgeRightButton" title="선택 이미지의 내부 위치를 오른쪽으로 2px 이동합니다.">이미지 →</button>
+<button class="button button--ghost button--small" id="imageNudgeUpButton" title="선택 이미지의 내부 위치를 위로 2px 이동합니다.">이미지 ↑</button>
+<button class="button button--ghost button--small" id="imageNudgeDownButton" title="선택 이미지의 내부 위치를 아래로 2px 이동합니다.">이미지 ↓</button>
+</div>
+</details>
+<div class="panel-divider"></div>
+<section class="inspector-multi-tools" hidden="" id="multiArrangeTools">
+<div class="panel__header panel__header--split">
+<h2>다중 선택 배치</h2>
+<div class="mini-summary" id="multiArrangeSummary">2개 이상 선택 시 활성화</div>
+</div>
+<div class="style-form">
+<label class="field">
+<span>스택 방향</span>
+<select id="stackDirectionSelect">
+<option value="vertical">세로</option>
+<option value="horizontal">가로</option>
+</select>
+</label>
+<div class="control-row control-row--split">
+<label class="field field--mini">
+<span>간격(px)</span>
+<input id="stackGapInput" min="0" step="1" type="number" value="24"/>
+</label>
+<label class="field field--mini">
+<span>정렬</span>
+<select id="stackAlignSelect">
+<option value="start">시작</option>
+<option value="center">가운데</option>
+<option value="end">끝</option>
+</select>
+</label>
+</div>
+<div class="button-row button-row--compact">
+<button class="button button--ghost button--small" id="stackApplyButton" type="button">스택 적용</button>
+<label class="field field--mini">
+<span>간격 정리</span>
+<select id="tidyAxisSelect">
+<option value="x">가로</option>
+<option value="y">세로</option>
+</select>
+</label>
+<button class="button button--ghost button--small" id="tidyApplyButton" type="button">정리</button>
+</div>
+</div>
+<div class="panel-divider"></div>
+<div class="compact-action-row">
+<label class="field field--mini compact-action-row__select">
+<span>다중 정렬</span>
+<select id="batchActionSelect">
+<option value="">선택하세요</option>
+<option value="same-width">같은 너비</option>
+<option value="same-height">같은 높이</option>
+<option value="same-size">같은 크기</option>
+<option value="align-left">왼쪽 정렬</option>
+<option value="align-center">가운데 정렬</option>
+<option value="align-right">오른쪽 정렬</option>
+<option value="align-top">위쪽 정렬</option>
+<option value="align-middle">세로 중앙</option>
+<option value="align-bottom">아래쪽 정렬</option>
+<option value="distribute-horizontal">가로 분배</option>
+<option value="distribute-vertical">세로 분배</option>
+<option value="reset-transform">배치 초기화</option>
+</select>
+</label>
+<button class="button button--secondary button--small" id="applyBatchActionButton" type="button">적용</button>
+</div>
+<p class="hint">현재는 <code>transform</code> 기반 배치입니다. 그래서 Figma처럼 부모 레이아웃 자체를 다시 짜는 단계는 아직 아닙니다.</p>
+</section>
+</section></section><section class="panel sidebar-panel" data-sidebar-panel="left-theme"><div class="panel__header panel__header--split"><h2>테마 / 코드</h2><div class="mini-summary" id="themeStudioBadge">색상 0 · 토큰 0</div></div><p class="hint">색상, 토큰, 검사, 안전 적용을 한 흐름으로 다룹니다. HTML 편집기 특화 기능을 여기서 모아서 관리합니다.</p><div class="theme-studio-toolbar"><div class="segmented segmented--small theme-studio-modes"><button class="segmented__item is-active" data-theme-studio-mode="colors" type="button">색상</button><button class="segmented__item" data-theme-studio-mode="tokens" type="button">토큰</button><button class="segmented__item" data-theme-studio-mode="lint" type="button">검사</button><button class="segmented__item" data-theme-studio-mode="apply" type="button">적용</button></div></div><section class="theme-studio-flow"><div class="theme-studio-flow__summary" id="themeStudioSummary">문서 색상, 토큰, 검사 상태를 이곳에서 이어서 확인할 수 있습니다.</div><div class="button-row button-row--compact theme-studio-flow__actions"><button class="button button--ghost button--small" id="themeStudioRefreshVisibleButton" type="button">다시 읽기</button><button class="button button--ghost button--small" id="themeStudioRunChecksButton" type="button">검사</button><button class="button button--secondary button--small" id="themeStudioSafeApplyButton" type="button">안전 적용</button><button class="button button--ghost button--small" id="themeStudioOpenCodeButton" type="button">코드 열기</button></div><div class="mini-summary" id="themeStudioFlowState">현재 보기와 코드 초안, 검사 상태를 한 번에 요약합니다.</div></section><section class="theme-studio-pane is-active" data-theme-studio-pane="colors"><div class="theme-studio-mount" id="themeStudioColorsMount"></div></section><section class="theme-studio-pane" data-theme-studio-pane="tokens" hidden=""><div class="theme-studio-mount" id="themeStudioTokensMount"></div></section><section class="theme-studio-pane" data-theme-studio-pane="lint" hidden=""><div class="theme-studio-mount" id="themeStudioLintMount"></div></section><section class="theme-studio-pane" data-theme-studio-pane="apply" hidden=""><div class="theme-apply-card"><div class="theme-apply-card__top"><strong>HTML 적용 센터</strong><span class="mini-summary" id="themeStudioApplyHint">코드 워크벤치와 연결됩니다.</span></div><div class="button-row button-row--compact"><button class="button button--secondary button--small" id="themeStudioSyncCodeButton" type="button">캔버스 → HTML</button><button class="button button--secondary button--small" id="themeStudioApplyCodeButton" type="button">HTML → 캔버스</button></div><div class="compact-action-row"><label class="field field--mini compact-action-row__select"><span>빠른 비교</span><select id="themeStudioComparePresetSelect"><option value="edited-vs-original">편집본 ↔ 원본</option><option value="edited-vs-normalized">편집본 ↔ 정규화</option><option value="draft-vs-current">초안 ↔ 현재 보기</option></select></label><button class="button button--ghost button--small" id="themeStudioApplyComparePresetButton" type="button">비교 열기</button></div><div class="button-row button-row--compact"><button class="button button--ghost button--small" id="themeStudioIssuesOnlyButton" type="button">이슈 연결만</button><button class="button button--ghost button--small" id="themeStudioColorDiffButton" type="button">색상 변경만</button></div><div class="mini-summary" id="themeStudioCompareSummary">코드 워크벤치의 비교 프리셋과 연결됩니다.</div></div><div class="theme-studio-mount" id="themeStudioApplyMount"></div></section></section><section class="panel sidebar-panel" data-sidebar-panel="left-layers"><div class="panel__header panel__header--split"><h2>레이어 / 자산</h2></div><div class="panel__header panel__header--split">
+<h2>레이어</h2>
+<input class="asset-filter" id="layerFilterInput" placeholder="레이어 검색" type="search"/>
+</div><div class="layer-tree" id="layerTree"></div><div class="panel-divider"></div><div class="panel__header">
+<h2>슬롯 목록</h2>
+</div><div class="slot-list" id="slotList"></div><div class="panel-divider"></div><div class="panel__header panel__header--split">
+<h2>자산 표</h2>
+<input class="asset-filter" id="assetFilterInput" placeholder="자산 검색" type="search"/>
+</div><div id="assetTableWrap"></div></section><section class="panel sidebar-panel" data-sidebar-panel="left-diagnostics"><div class="panel-step-guide" data-left-tab-guide-for="left-diagnostics"></div><div class="panel__header panel__header--split"><h2>진단 / 검수</h2></div><section class="panel is-active inspector-context inspector-context--inspect" id="leftInspectorInspectSection">
+<div class="panel__header panel__header--split">
+<h2>출력 전 검수</h2>
+<button class="button button--ghost button--small" id="preflightRefreshButton">다시 검사</button>
+</div>
+<div id="preflightContainer"></div>
+<div class="panel-divider"></div>
+<div class="panel__header">
+<h2>선택 검사</h2>
+</div>
+<div id="selectionInspector"></div>
+<div class="panel-divider"></div>
+<div class="panel__header">
+<h2>정규화 통계</h2>
+</div>
+<div id="normalizeStats"></div>
+<div class="panel-divider"></div>
+<details class="left-accordion left-accordion--inline" id="assetRelinkSection">
+<summary><strong>깨진 자산 경로 일괄 relink</strong></summary>
+<div class="left-accordion__body">
+<p class="hint">미해결 자산을 파일명 기준으로 한 번에 다시 연결합니다. 매칭된 자산은 data URL로 치환해 저장 HTML에도 남습니다.</p>
+<div class="button-row button-row--compact">
+<button class="button button--secondary button--small" id="relinkBrokenAssetsButton" type="button">파일 선택 후 일괄 relink</button>
+<button class="button button--ghost button--small" id="refreshBrokenAssetsButton" type="button">목록 새로고침</button>
+</div>
+<div class="asset-ref-list" id="brokenAssetList"></div>
+<div class="mini-summary" id="brokenAssetRelinkSummary">미해결 자산이 있으면 여기서 다시 연결할 수 있습니다.</div>
+</div>
+</details>
+<div class="panel-divider"></div>
+<details class="left-accordion left-accordion--inline" id="marketLintSection">
+<summary><strong>마켓 업로드용 HTML lint</strong></summary>
+<div class="left-accordion__body">
+<p class="hint">스크립트/iframe, 고정 포지션, 원격 리소스, placeholder 등 마켓 업로드에서 문제가 되기 쉬운 항목을 별도로 검사합니다.</p>
+<div class="button-row button-row--compact">
+<button class="button button--secondary button--small" id="runMarketLintButton" type="button">다시 검사</button>
+</div>
+<div class="lint-list" id="marketLintList"></div>
+</div>
+</details>
+<div class="panel-divider"></div>
+<details class="left-accordion left-accordion--inline" id="contrastLintSection">
+<summary><strong>색상 대비 / 가독성 lint</strong></summary>
+<div class="left-accordion__body">
+<p class="hint">현재 미리보기 기준으로 텍스트/배경 대비가 낮은 요소를 찾아줍니다. 선택 섹션 점검 전에 한 번 돌려보면 눈에 띄지 않는 가독성 문제를 빨리 잡을 수 있습니다.</p>
+<div class="button-row button-row--compact">
+<button class="button button--secondary button--small" id="runContrastLintButton" type="button">다시 검사</button>
+</div>
+<div class="mini-summary" id="contrastLintSummary">가독성 문제가 있으면 여기서 바로 확인할 수 있습니다.</div>
+<div class="lint-list" id="contrastLintList"></div>
+</div>
+</details>
+</section></section><section class="panel sidebar-panel" data-sidebar-panel="left-export"><div class="panel__header panel__header--split"><h2>저장 / 출력</h2><button class="button button--secondary button--small" data-app-action="open-download-modal" type="button">출력 열기</button></div><p class="hint">문서 저장과 PNG/JPG/섹션 ZIP을 한 곳에서 실행합니다.</p><div class="export-quick-grid"><button class="button button--ghost button--small" data-download-action="save-edited" type="button">문서 저장</button><button class="button button--ghost button--small" data-download-action="export-full-png" type="button">전체 PNG</button><button class="button button--ghost button--small" data-download-action="export-full-jpg" type="button">전체 JPG</button><button class="button button--ghost button--small" data-download-action="export-selection-png" type="button">선택 PNG</button><button class="button button--ghost button--small" data-download-action="export-sections-zip" type="button">섹션 ZIP</button></div></section><section class="panel sidebar-panel" data-sidebar-panel="left-settings"><div class="panel__header panel__header--split"><h2>설정 / 단축키</h2><div class="mini-summary">환경</div></div><p class="hint">메인 편집 흐름에서 빼도 되는 환경 토글과 단축키 안내를 이곳에 모았습니다.</p><div class="setting-list"><button class="button button--ghost button--small" id="settingsSnapToggleButton" type="button">스냅</button><button class="button button--ghost button--small" id="settingsGuideToggleButton" type="button">가이드</button><button class="button button--ghost button--small" id="settingsRulerToggleButton" type="button">눈금자</button><button class="button button--ghost button--small" id="settingsShortcutHelpButton" type="button">단축키 보기</button><button class="button button--ghost button--small" id="settingsBeginnerModeButton" type="button">초보 모드</button><button class="button button--ghost button--small" id="settingsQaChecklistButton" type="button">QA 체크</button></div><div class="panel-divider"></div><div class="hint" id="settingsPanelHint">스냅, 가이드, 눈금자 같은 환경 옵션은 여기서 관리합니다.</div></section></div></aside>
+<main class="main-stage">
+<div class="stage-toolbar stage-toolbar--reboot">
+<div class="stage-toolbar__row">
+<div class="selection-mode segmented">
+<button class="segmented__item is-active" data-selection-mode="smart" id="selectionSmartButton" title="선택 도구 (V)">선택</button>
+<button class="segmented__item" data-beginner-advanced="" data-selection-mode="image">이미지</button>
+<button class="segmented__item" data-beginner-advanced="" data-selection-mode="text" title="텍스트 도구 (T)">텍스트</button>
+<button class="segmented__item" data-beginner-advanced="" data-selection-mode="box" title="박스 도구 (R)">박스</button>
+</div>
+</div>
+<div class="stage-toolbar__row" data-beginner-advanced="">
+<div class="canvas-controls button-row">
+<button class="button button--ghost button--small" id="zoomOutButton">-</button>
+<div class="mini-control mini-control--value" id="zoomLabel">100%</div>
+<button class="button button--ghost button--small" id="zoomInButton">+</button>
+<button class="button button--ghost button--small" id="zoomResetButton">100%</button>
+<button class="button button--ghost button--small" id="zoomFitButton">폭 맞춤</button>
+</div>
+<div class="canvas-controls button-row">
+
+
+
+</div>
+</div>
+<details class="stage-help-details" hidden=""><summary>작업 가이드</summary><div class="stage-help-details__body"><div class="stage-hint">가능: 선택·이동·리사이즈·복제/삭제·요소추가·XYWH·z-order·그룹 묶기/해제·JPG/선택 PNG/3x 출력.<br/>불가: 선택 모음/컴포넌트 템플릿화, 다중선택 bbox PNG, Figma급 고급 단축키 세트.<br/>주의: 그룹은 잠기지 않은 요소 2개 이상을 선택해야 하며, 공통 조상 자체나 이미 그룹 내부 범위에서는 바로 그룹화할 수 없습니다.<span data-beginner-advanced=""><br/>초보 순서: ① 요소 클릭 ② 드래그/핸들로 배치 조정(Shift+드래그 다중선택, 스냅 가이드 지원) ③ 저장(문서) 또는 출력(PNG/JPG).</span></div><div class="project-meta" id="projectMeta"></div></div></details>
+</div>
+<section class="stage-panel stage-panel--preview">
+<div class="preview-viewport" id="previewViewport">
+<div class="canvas-context-bar" hidden="" id="canvasContextBar">
+<div class="canvas-context-bar__actions canvas-context-bar__actions--compact">
+<div class="canvas-context-bar__group canvas-context-bar__group--core">
+<button class="button button--secondary button--small" data-canvas-action="image-replace" data-canvas-scope="common" id="canvasQuickbarPrimary">주요 동작</button>
+<button class="button button--ghost button--small" data-canvas-action="open-properties-panel" data-canvas-scope="common" id="canvasQuickbarSecondary">세부</button>
+<button class="button button--ghost button--small" data-canvas-action="duplicate" data-canvas-scope="common">복제</button>
+</div>
+<details class="quickbar-more" hidden="" id="canvasQuickbarMore">
+<summary class="button button--ghost button--small" title="추가 작업">···</summary>
+<div class="quickbar-more__menu">
+<button class="button button--ghost button--small" data-canvas-action="open-properties-panel" data-canvas-scope="image">속성 열기</button>
+<button class="button button--ghost button--small" data-canvas-action="toggle-image-lock" data-canvas-scope="image">이미지 잠금</button>
+<button class="button button--ghost button--small" data-canvas-action="image-cover" data-canvas-scope="image">채우기</button>
+<button class="button button--ghost button--small" data-canvas-action="image-contain" data-canvas-scope="image">맞춤</button>
+<button class="button button--ghost button--small" data-canvas-action="align-top" data-canvas-scope="multi">상단</button>
+<button class="button button--ghost button--small" data-canvas-action="same-size" data-canvas-scope="multi">같은 크기</button>
+<button class="button button--warn button--small" data-canvas-action="delete" data-canvas-scope="common">삭제</button>
+<button class="button button--ghost button--small" data-canvas-action="layer-index-forward" data-canvas-scope="common">앞으로</button>
+<button class="button button--ghost button--small" data-canvas-action="layer-index-backward" data-canvas-scope="common">뒤로</button>
+</div>
+</details>
+</div>
+<!-- 숨김 규칙:
+                 1) common(복제/삭제)은 항상 고정 노출
+                 2) image는 단일 이미지 슬롯 선택일 때만 노출
+                 3) text는 단일 텍스트 선택일 때만 노출
+                 4) multi는 2개 이상 다중 선택일 때만 노출 -->
+</div>
+<div class="mini-hud" hidden="" id="miniHud">
+<span id="miniHudPos">X 0 / Y 0</span>
+<span id="miniHudSize">W 0 / H 0</span>
+<span id="miniHudLayer">레이어 -/-</span>
+</div>
+<div class="crop-floating-chip" hidden="" id="cropFloatingChip">
+<div class="crop-floating-chip__text">
+<span id="cropFloatingHint">크롭 모드 · Enter 적용 · Esc 취소</span>
+<small id="cropFloatingMeta">팬: 휠 / 줌: Ctrl+휠</small>
+</div>
+<div class="button-row button-row--compact">
+<button class="button button--secondary button--small" data-canvas-action="image-crop-apply" data-canvas-scope="crop" type="button">적용</button>
+<button class="button button--ghost button--small" data-canvas-action="image-crop-cancel" data-canvas-scope="crop" type="button">취소</button>
+</div>
+</div>
+<div class="crop-control-strip" hidden="" id="cropControlStrip">
+<div class="button-row button-row--compact">
+<span class="crop-lock-badge" hidden="" id="cropLockBadge">이미지 잠금</span>
+<button class="button button--ghost button--small" id="cropPresetFitButton" type="button">맞춤</button>
+<button class="button button--ghost button--small" id="cropPresetCoverButton" type="button">채우기</button>
+<button class="button button--ghost button--small" id="cropPresetActualButton" type="button">100%</button>
+<button class="button button--ghost button--small" id="cropPresetResetButton" type="button">초기화</button>
+</div>
+<label class="crop-control-strip__slider" for="cropZoomSlider"><span>줌</span><input id="cropZoomSlider" max="500" min="35" step="1" type="range" value="100"/><strong id="cropZoomValue">100%</strong></label>
+</div>
+<div class="preview-minimap" hidden="" id="previewMinimap">
+<div class="preview-minimap__track" id="previewMinimapTrack"></div>
+<div class="preview-minimap__viewport" id="previewMinimapViewportRect"></div>
+</div>
+<div class="preview-scaler" id="previewScaler">
+<iframe id="previewFrame" sandbox="allow-same-origin"></iframe>
+</div>
+</div>
+</section>
+</main>
+<aside aria-hidden="true" class="sidebar sidebar--right" hidden="" id="rightSidebar"><div class="sidebar-panel is-active section-sidebar-panel" data-sidebar-panel="right-sections"><section class="section-strip-dock" id="sectionStripDock"><div class="section-strip__header"><div class="section-strip__title"><strong>섹션</strong><span>카드를 드래그해 순서를 바꾸고, Shift로 여러 장을 골라 블록 재정렬할 수 있습니다.</span><div class="mini-summary" id="sectionSelectionSummary">선택 없음</div></div><div class="button-row button-row--compact section-strip__actions"><label class="field field--mini section-thumb-preset"><span>썸네일</span><select id="sectionThumbnailPresetSelect"><option selected="" value="auto">자동</option><option value="fast">빠름</option><option value="balanced">균형</option><option value="detail">고화질</option></select></label><button class="button button--secondary button--small" id="sectionAddButton" type="button">추가</button><button class="button button--ghost button--small" id="sectionDockCloseButton" type="button">닫기</button></div></div><div class="section-note-editor" id="sectionNoteEditor">
+<label class="field">
+<span>섹션 메모</span>
+<textarea id="sectionNoteInput" placeholder="이 섹션에 대한 작업 메모를 적어두세요. 저장 HTML에는 data-section-note와 주석으로 함께 남습니다." rows="3"></textarea>
+</label>
+<div class="button-row button-row--compact">
+<button class="button button--secondary button--small" id="applySectionNoteButton" type="button">메모 저장</button>
+<button class="button button--ghost button--small" id="clearSectionNoteButton" type="button">메모 비우기</button>
+</div>
+<div class="mini-summary" id="sectionNoteSummary">섹션 하나를 선택하면 메모를 남길 수 있습니다.</div>
+</div>
+<div class="slot-list section-filmstrip section-strip__list" data-view="section-filmstrip" id="sectionList"></div></section></div></aside>
+</div>
+<input accept=".html,.htm,text/html" hidden="" id="htmlFileInput" type="file"/>
+<input accept=".html,.htm,image/*" hidden="" id="folderInput" multiple="" type="file" webkitdirectory=""/>
+<input accept="image/*" hidden="" id="replaceImageInput" multiple="" type="file"/>
+<input accept="image/*" hidden="" id="relinkAssetInput" multiple="" type="file"/>
+<div class="download-modal-overlay" hidden="" id="qaChecklistModal"><section aria-labelledby="qaChecklistTitle" aria-modal="true" class="download-modal qa-checklist-modal" role="dialog"><header class="download-modal__header"><h2 id="qaChecklistTitle">수동 QA 체크리스트</h2><button class="button button--ghost button--small" id="closeQaChecklistButton" type="button">닫기</button></header><div class="download-modal__body"><div class="qa-checklist" id="qaChecklistContent"></div></div></section></div><footer class="statusbar" hidden="" id="appStatusbar">
+<div class="status-chip status-chip--document" data-status="idle" id="documentStatusChip">문서 없음</div>
+<div id="statusText">대기 중</div>
+</footer>
+<div class="download-modal-overlay" hidden="" id="downloadModal">
+<section aria-labelledby="downloadModalTitle" aria-modal="true" class="download-modal" role="dialog">
+<header class="download-modal__header">
+<h2 id="downloadModalTitle">저장 / 출력</h2>
+<button class="button button--ghost button--small" id="closeDownloadModalButton" type="button">닫기</button>
+</header>
+<div class="download-modal__body">
+<label class="field">
+<span>실행할 작업</span>
+<select id="downloadChoiceSelect">
+<option value="save-edited">문서 저장</option>
+<option value="export-full-png">전체 PNG</option>
+<option value="export-full-jpg">전체 JPG</option>
+<option value="export-selection-png">선택 PNG</option>
+<option value="export-sections-zip">섹션 ZIP</option>
+<option value="download-normalized-html">정규화 HTML</option>
+<option value="download-linked-zip">링크 ZIP</option>
+<option value="download-export-preset-package">Preset ZIP</option>
+</select>
+</label>
+<div class="download-modal__grid">
+<label class="field">
+<span>저장 포맷</span>
+<select id="saveFormatSelect">
+<option value="linked">linked 표준 (가볍고 재편집 권장)</option>
+<option value="embedded">embedded 전달용 (무거울 수 있음)</option>
+</select>
+</label>
+<label class="field">
+<span>Preset</span>
+<select id="exportPresetSelect"></select>
+</label>
+<label class="field">
+<span>배율</span>
+<select data-export-scale-control="" id="exportScaleSelectMain">
+<option value="1">1x</option>
+<option value="2">2x</option>
+<option value="3">3x</option>
+</select>
+</label>
+<label class="field">
+<span>JPG 품질</span>
+<input data-export-jpg-quality-control="" id="exportJpgQualityInputMain" max="1" min="0.1" step="0.01" type="number" value="0.92"/>
+</label>
+</div>
+<div class="download-modal__options">
+<label class="field field--mini">
+<span>선택 여백(px)</span>
+<input id="selectionExportPaddingInput" max="240" min="0" step="1" type="number" value="16"/>
+</label>
+<label class="field field--mini">
+<span>선택 배경</span>
+<select id="selectionExportBackgroundSelect">
+<option value="transparent">투명</option>
+<option value="opaque">불투명(흰색)</option>
+</select>
+</label>
+</div>
+<details class="download-modal__advanced" id="downloadAdvancedDetails">
+<summary>고급 형식 / 세부 옵션</summary>
+<div class="download-modal__advanced-body">
+<div class="download-modal__preset-buttons">
+<button class="button button--ghost button--small" id="downloadNormalizedButton" type="button">정규화 HTML</button>
+<button class="button button--ghost button--small" id="downloadLinkedZipButton" type="button">링크 ZIP</button>
+<button class="button button--ghost button--small" id="exportSectionsZipButton" type="button">섹션 ZIP</button>
+<button class="button button--ghost button--small" id="exportSelectionPngButton" type="button">선택 PNG</button>
+<button class="button button--ghost button--small" id="exportPresetPackageButton" type="button">Preset ZIP</button>
+</div>
+<div class="download-modal__meta download-modal__meta--compact">
+<span class="topbar__sub" id="saveFormatStatus">현재 저장 포맷: linked</span>
+<span class="topbar__sub topbar__sub--hint" id="saveFormatGuide">추천: 내 PC에서 다시 편집할 땐 linked, 1파일 전달용은 embedded</span>
+<span class="topbar__sub topbar__sub--hint" id="saveFormatPreview"></span>
+<span class="topbar__sub topbar__sub--hint" id="saveMetaSummary"></span>
+</div>
+</div>
+</details>
+</div>
+<footer class="download-modal__footer">
+<button class="button button--ghost" id="downloadReportButton" type="button">리포트 JSON</button>
+<button class="button" id="runDownloadChoiceButton" type="button">실행</button>
+</footer>
+</section>
+</div>
+<div class="shortcut-help-overlay" hidden="" id="shortcutHelpOverlay">
+<section aria-labelledby="shortcutHelpTitle" aria-modal="true" class="shortcut-help-panel" role="dialog">
+<header class="shortcut-help-panel__header">
+<h2 id="shortcutHelpTitle">단축키 치트시트 (1차 10개)</h2>
+<button class="button button--ghost button--small" id="shortcutHelpCloseButton" type="button">닫기</button>
+</header>
+<ul class="shortcut-help-list" id="shortcutHelpList"></ul>
+<p class="hint">입력창/텍스트 편집 중에는 단축키 충돌을 막기 위해 대부분의 편집 단축키를 무시합니다.</p>
+</section>
+</div>
+<div class="command-palette-overlay" hidden="" id="commandPaletteOverlay">
+<section aria-labelledby="commandPaletteTitle" aria-modal="true" class="command-palette" role="dialog">
+<header class="shortcut-help-panel__header">
+<h2 id="commandPaletteTitle">명령 검색 (Ctrl/Cmd + K)</h2>
+<button class="button button--ghost button--small" id="commandPaletteCloseButton" type="button">닫기</button>
+</header>
+<label class="field">
+<span>명령 검색</span>
+<input autocomplete="off" id="commandPaletteInput" placeholder="예: 복제, 삭제, PNG, 섹션 추가" type="search"/>
+</label>
+<ul aria-label="명령 결과" class="command-palette__list" id="commandPaletteList" role="listbox"></ul>
+<div class="button-row">
+<button class="button button--secondary button--small" id="commandPaletteRunButton" type="button">선택 명령 실행</button>
+</div>
+</section>
+</div>
+<div aria-live="polite" class="beginner-tutorial" hidden="" id="beginnerTutorialTooltip" role="dialog">
+<strong id="beginnerTutorialTitle">초보 모드 안내</strong>
+<p id="beginnerTutorialBody"></p>
+<div class="beginner-tutorial__footer">
+<span id="beginnerTutorialStep">1 / 3</span>
+<div class="button-row button-row--compact">
+<button class="button button--ghost button--small" id="beginnerTutorialPrevButton" type="button">이전</button>
+<button class="button button--secondary button--small" id="beginnerTutorialNextButton" type="button">다음</button>
+<button class="button button--ghost button--small" id="beginnerTutorialCloseButton" type="button">건너뛰기</button>
+</div>
+</div>
+</div>
+<div class="onboarding-checklist" hidden="" id="onboardingChecklist">
+<strong>온보딩 완료 ✅</strong>
+<p id="onboardingChecklistItem"></p>
+<button class="button button--small" id="onboardingChecklistDoneButton" type="button">완료 체크</button>
+</div>
+<script src="./app.bundle.js"></script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+{
+  "cases": [
+    {
+      "id": "open-html",
+      "goal": "fixture_05 열기",
+      "checks": [
+        "fixture opens",
+        "slots detected",
+        "uploaded refs preserved"
+      ]
+    },
+    {
+      "id": "insert-image-linked",
+      "goal": "이미지 삽입 후 data URL 기본 경로 회피",
+      "checks": [
+        "runtime asset created",
+        "linked path available"
+      ]
+    },
+    {
+      "id": "crop-image",
+      "goal": "더블클릭 크롭 후 저장",
+      "checks": [
+        "crop mode enters",
+        "apply/esc works"
+      ]
+    },
+    {
+      "id": "section-reorder",
+      "goal": "섹션 재정렬",
+      "checks": [
+        "drag reorder works",
+        "save preserves order"
+      ]
+    },
+    {
+      "id": "safe-apply",
+      "goal": "코드 수정 후 안전 적용",
+      "checks": [
+        "safe areas merged",
+        "unsafe structural diff warned"
+      ]
+    },
+    {
+      "id": "code-diff-color-only",
+      "goal": "색상 변경만 보기",
+      "checks": [
+        "diff preset available",
+        "chunks filtered"
+      ]
+    },
+    {
+      "id": "linked-export",
+      "goal": "linked 저장",
+      "checks": [
+        "assets emitted",
+        "reopen works"
+      ]
+    },
+    {
+      "id": "embedded-export",
+      "goal": "embedded 저장",
+      "checks": [
+        "single html produced",
+        "warning shown if heavy"
+      ]
+    },
+    {
+      "id": "huge-doc-performance",
+      "goal": "큰 문서 성능",
+      "checks": [
+        "diff acceptable",
+        "thumbnail acceptable",
+        "iframe sync acceptable"
+      ]
+    },
+    {
+      "id": "asset-relink",
+      "goal": "깨진 자산 일괄 relink",
+      "checks": [
+        "basename match works",
+        "preview restored"
+      ]
+    }
+  ]
+}

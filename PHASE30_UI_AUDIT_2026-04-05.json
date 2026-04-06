@@ -1,0 +1,34 @@
+{
+  "total_buttons": 172,
+  "total_inputs": 48,
+  "total_details": 24,
+  "panels": {
+    "topbar": {
+      "buttons": 15,
+      "inputs": 2,
+      "details": 4
+    },
+    "left_sidebar": {
+      "buttons": 106,
+      "inputs": 31,
+      "details": 17
+    },
+    "main_stage": {
+      "buttons": 26,
+      "inputs": 1,
+      "details": 2
+    },
+    "code_workbench": {
+      "buttons": 15,
+      "inputs": 5,
+      "details": 1
+    },
+    "download_modal": {
+      "buttons": 8,
+      "inputs": 7,
+      "details": 1
+    }
+  },
+  "accordion_count_left_properties": 8,
+  "duplicate_ids": []
+}
