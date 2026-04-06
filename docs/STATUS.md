@@ -15,6 +15,20 @@
 - 어떤 검증을 돌렸는지
 - 남은 리스크가 뭔지
 
+## 2026-04-06 업데이트 (작업 종료 체크리스트/PR 템플릿 고정)
+- `docs/runbooks/IMPLEMENT.md`에 "작업 종료 체크리스트 (필수)"를 신설하고 `docs/STATUS.md` 업데이트를 필수 항목으로 명시했다.
+- 같은 문서에 리스크/결정 변경 시 `docs/KNOWN_ISSUES.md`, `docs/DECISIONS.md` 갱신 여부를 확인하는 복붙 템플릿을 추가했다.
+- `.github/PULL_REQUEST_TEMPLATE.md`를 추가해 PR 본문에 `무엇을 했는지 / 어떤 검증을 돌렸는지 / 남은 리스크` 섹션을 고정했다.
+
+### 이번 작업 검증
+- `python3 scripts/build_local_bundle.py`
+- `node --check app.bundle.js`
+- `python3 scripts/validate_phase8.py`
+- `python3 scripts/run_harness_gate.py`
+
+### 남은 리스크
+- 문서/템플릿 기준만 고정한 상태라, 기존에 열려 있는 오래된 PR에는 자동 적용되지 않을 수 있다.
+
 ## 2026-04-06 업데이트
 - `docs/CONSTRAINTS.md`의 "초기 부팅에 서버/HTTPS/원격 API 필수 의존 금지"를 기계적으로 점검하는 `scripts/check_remote_dependency_gate.py`를 추가했다.
 - 스캔 범위는 `src/main.js`, `src/editor/**/*.js`, `src/core/**/*.js`이며, 원격 호출 토큰(`fetch`, `WebSocket`, `EventSource`, `XMLHttpRequest`)을 수집하고 선택 기능/필수(또는 미분류)로 분류한다.
