@@ -15,6 +15,20 @@
 - 어떤 검증을 돌렸는지
 - 남은 리스크가 뭔지
 
+## 2026-04-06 업데이트 (작업 종료 체크리스트/PR 템플릿 고정)
+- `docs/runbooks/IMPLEMENT.md`에 "작업 종료 체크리스트 (필수)"를 신설하고 `docs/STATUS.md` 업데이트를 필수 항목으로 명시했다.
+- 같은 문서에 리스크/결정 변경 시 `docs/KNOWN_ISSUES.md`, `docs/DECISIONS.md` 갱신 여부를 확인하는 복붙 템플릿을 추가했다.
+- `.github/PULL_REQUEST_TEMPLATE.md`를 추가해 PR 본문에 `무엇을 했는지 / 어떤 검증을 돌렸는지 / 남은 리스크` 섹션을 고정했다.
+
+### 이번 작업 검증
+- `python3 scripts/build_local_bundle.py`
+- `node --check app.bundle.js`
+- `python3 scripts/validate_phase8.py`
+- `python3 scripts/run_harness_gate.py`
+
+### 남은 리스크
+- 문서/템플릿 기준만 고정한 상태라, 기존에 열려 있는 오래된 PR에는 자동 적용되지 않을 수 있다.
+
 ## 2026-04-06 업데이트
 - `docs/CONSTRAINTS.md`의 "초기 부팅에 서버/HTTPS/원격 API 필수 의존 금지"를 기계적으로 점검하는 `scripts/check_remote_dependency_gate.py`를 추가했다.
 - 스캔 범위는 `src/main.js`, `src/editor/**/*.js`, `src/core/**/*.js`이며, 원격 호출 토큰(`fetch`, `WebSocket`, `EventSource`, `XMLHttpRequest`)을 수집하고 선택 기능/필수(또는 미분류)로 분류한다.
@@ -42,6 +56,12 @@
 - `scripts/validate_perf_budgets.py`를 추가해 계측 포인트(코드 anchor) 존재 여부를 검사하고, 프로브 결과(`evals/reports/PERF_PROBES.json` 또는 `reports/PERF_PROBES.json`)를 예산과 비교하도록 했다.
 - 단계적 기준을 도입했다: `PERF_BUDGET_MODE=warn`(기본)은 초과를 경고로 처리, `PERF_BUDGET_MODE=enforce`는 예산 30% 초과를 실패로 처리한다. 계측 포인트 누락은 두 모드 모두 실패다.
 - `scripts/run_harness_gate.py` 명령 흐름에 perf validator를 추가했고, `reports/PERF_VALIDATOR_RESULTS.json` 요약을 gate 결과 JSON에 수집한다.
+## 2026-04-06 추가 업데이트 (런타임 오버레이 직렬화 가드)
+- `src/core/runtime-overlay.js`를 추가해 런타임 오버레이 DOM 식별자(`data-editor-overlay`, `data-editor-runtime`, `__phase5_local_editor_overlay`)를 공통 정의했다.
+- `src/editor/frame-editor.js`의 인터랙션/크롭 오버레이 생성 경로를 위 식별자로 통일하고, 저장 직전 직렬화 단계에서 `removeRuntimeOverlayNodes()`로 오버레이 제거를 공통 처리하도록 정리했다.
+- `src/core/normalize-project.js` 시작 단계에서도 동일한 오버레이 제거 로직을 적용해 normalize 결과에 런타임 오버레이가 섞이지 않도록 보강했다.
+- `scripts/validate_phase8.py`에 fixture_05 오버레이 혼입 회귀 체크(`F05_has_no_runtime_overlay_tokens`)를 추가했다.
+- 오버레이/라인 이동으로 바뀐 `fetch` 위치를 반영하도록 `scripts/check_remote_dependency_gate.py`의 optional line 허용 목록을 갱신했다.
 
 ### 이번 작업 검증
 - `python3 scripts/build_local_bundle.py`

@@ -2,6 +2,7 @@ import { EXPLICIT_SLOT_SELECTOR } from '../config.js';
 import { buildSvgPlaceholderDataUrl, nextId, stripQueryHash, truncate } from '../utils.js';
 import { createAssetResolver } from './asset-resolver.js';
 import { ensureUniqueNodeUids } from './node-uid.js';
+import { removeRuntimeOverlayNodes } from './runtime-overlay.js';
 import { collectSlotCandidates } from './slot-detector.js';
 
 const CSS_URL_RE = /url\((['"]?)([^"'()]+)\1\)/gi;
@@ -112,6 +113,7 @@ export function normalizeProject({
 }) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(String(html || ''), 'text/html');
+  removeRuntimeOverlayNodes(doc);
   const resolver = createAssetResolver(fileIndex, htmlEntryPath);
   const assets = [];
   const issues = [];

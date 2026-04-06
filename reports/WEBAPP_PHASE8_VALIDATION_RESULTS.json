@@ -4,8 +4,8 @@
     "check_count": 185,
     "passed": 185,
     "failed": 0,
-    "bundle_bytes": 688903,
-    "bundle_sha256": "e38498aa5fa3d113e5c2d03bc373966f04f4ce109a5d41ba8bf46e1fdce8e221",
+    "bundle_bytes": 688949,
+    "bundle_sha256": "4c6e3acc31d9a9ee71da7ddd9ae06c0c1cae98804d76ad8c16a9617d86c77172",
     "browser_smoke_status": "unavailable",
     "failure_type": "none"
   },
@@ -736,11 +736,6 @@
       "detail": "ok(optional_findings=3)"
     },
     {
-      "name": "constraints_save_mode_gate",
-      "ok": true,
-      "detail": "ok(checks=8)"
-    },
-    {
       "name": "main_has_no_duplicate_top_level_functions",
       "ok": true,
       "detail": "ok"
@@ -929,6 +924,11 @@
       "name": "F05_has_media_shells",
       "ok": true,
       "detail": "expected real-world slot patterns"
+    },
+    {
+      "name": "F05_has_no_runtime_overlay_tokens",
+      "ok": true,
+      "detail": "ok"
     },
     {
       "name": "playwright_smoke_uses_file_protocol",
