@@ -1,0 +1,45 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "name": "normalize_save_format_defaults_to_linked",
+      "ok": true,
+      "detail": "embedded는 명시적 예외(reason=explicit-user-choice)일 때만 허용되어야 합니다."
+    },
+    {
+      "name": "normalize_save_format_allows_embedded_only_explicitly",
+      "ok": true,
+      "detail": "allowEmbedded + explicit-user-choice 조합 외에는 embedded를 linked로 강등해야 합니다."
+    },
+    {
+      "name": "project_store_default_save_mode_is_linked",
+      "ok": true,
+      "detail": "default=linked"
+    },
+    {
+      "name": "project_store_embedded_requires_explicit_exception",
+      "ok": true,
+      "detail": "blocked=linked, explicit=embedded"
+    },
+    {
+      "name": "main_default_save_mode_literal_is_linked",
+      "ok": true,
+      "detail": "main.js의 현재 저장 포맷 기본값은 linked여야 합니다."
+    },
+    {
+      "name": "main_embedded_branch_is_explicit_exception_only",
+      "ok": true,
+      "detail": "embedded 허용 분기는 explicit-user-choice 예외로 분리되어야 합니다."
+    },
+    {
+      "name": "main_default_save_path_avoids_embedded_literal_call",
+      "ok": true,
+      "detail": "기본 저장 경로에서 embedded 직접 호출은 금지합니다."
+    },
+    {
+      "name": "main_default_save_path_no_data_url_generation_pattern",
+      "ok": true,
+      "detail": "기본 저장 함수(downloadEditedHtml) 경로에는 data URL 생성/저장 로직이 없어야 합니다."
+    }
+  ]
+}
