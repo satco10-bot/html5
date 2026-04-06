@@ -1,5 +1,6 @@
 import { BLOCKED_TAGS, EXPLICIT_SLOT_SELECTOR, LAYOUT_CLASS_RE, PLACEHOLDER_TEXT_RE, SLOT_NEAR_MISS_MIN, SLOT_SCORE_THRESHOLD, STRONG_SLOT_CLASS_RE } from '../config.js';
 import { nextId, truncate } from '../utils.js';
+import { isRuntimeOverlayElement } from './runtime-overlay.js';
 
 function directTextContent(element) {
   return Array.from(element.childNodes || [])
@@ -179,7 +180,7 @@ export function collectSlotCandidates(doc, { markDom = true } = {}) {
   const elements = Array.from(doc.body?.querySelectorAll('*') || []);
   for (const element of elements) {
     if (seen.has(element)) continue;
-    if (element.dataset.slotIgnore === '1' || element.dataset.editorRuntime === '1') continue;
+    if (element.dataset.slotIgnore === '1' || isRuntimeOverlayElement(element)) continue;
     if (BLOCKED_TAGS.has(element.tagName) || ['IMG', 'SOURCE', 'LINK'].includes(element.tagName)) continue;
     const result = evaluateCandidate(element);
     const label = buildLabel(element);

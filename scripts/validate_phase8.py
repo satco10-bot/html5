@@ -433,7 +433,12 @@ def main() -> None:
         f'[{CHECK_VERSIONS["phase8_runtime_tokens"]}] snap guide runtime should exist',
     )
     add_check(checks, 'frame_has_lock_hide_runtime', 'data-editor-hidden' in frame_js and 'data-editor-locked' in frame_js, 'hide/lock data attributes should exist')
-    add_check(checks, 'slot_detector_skips_runtime_nodes', 'editorRuntime' in slot_detector_js or 'data-editor-runtime' in slot_detector_js, 'slot detector should skip overlay runtime nodes')
+    add_check(
+        checks,
+        'slot_detector_skips_runtime_nodes',
+        ('editorRuntime' in slot_detector_js or 'data-editor-runtime' in slot_detector_js or 'isRuntimeOverlayElement' in slot_detector_js),
+        'slot detector should skip overlay runtime nodes',
+    )
     add_check(checks, 'renderers_have_layer_actions', 'data-layer-action="hide"' in renderers_js and 'data-layer-action="lock"' in renderers_js, 'layer action buttons should exist')
     add_check(
         checks,
@@ -537,6 +542,9 @@ def main() -> None:
     f05_html = f05_path.read_text(encoding='utf-8')
     add_check(checks, 'F05_has_two_uploaded_img_refs', f05_html.count('uploaded:') >= 2, f"uploaded_count={f05_html.count('uploaded:')}")
     add_check(checks, 'F05_has_media_shells', all(token in f05_html for token in ['media-shell', 'hero-shot', 'opt-thumb', 'visual']), 'expected real-world slot patterns')
+    overlay_tokens = ['data-editor-runtime=', 'data-editor-overlay=', '__phase5_local_editor_overlay', '__phase6_crop_overlay', '__phase7_resize_handle']
+    overlay_hits = [token for token in overlay_tokens if token in f05_html]
+    add_check(checks, 'F05_has_no_runtime_overlay_tokens', len(overlay_hits) == 0, 'ok' if not overlay_hits else f'overlay_tokens={overlay_hits}')
 
     browser_smoke = try_browser_smoke()
     add_check(checks, 'playwright_smoke_uses_file_protocol', INDEX.resolve().as_uri().startswith('file://'), INDEX.resolve().as_uri())

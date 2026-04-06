@@ -1030,6 +1030,32 @@ function ensureUniqueNodeUids(doc, { selector = '*', attribute = 'data-node-uid'
 }
 
 
+/* ===== src/core/runtime-overlay.js ===== */
+
+const RUNTIME_OVERLAY_SELECTOR = `[data-editor-overlay], [data-editor-runtime="1"], #${FRAME_OVERLAY_ID}`;
+function markRuntimeOverlay(element, kind = 'runtime') {
+  if (!element || element.nodeType !== Node.ELEMENT_NODE) return element;
+  element.dataset.editorRuntime = '1';
+  element.dataset.editorOverlay = String(kind || 'runtime');
+  return element;
+}
+function isRuntimeOverlayElement(element) {
+  if (!element || element.nodeType !== Node.ELEMENT_NODE) return false;
+  if (element.id === FRAME_OVERLAY_ID) return true;
+  if (element.hasAttribute('data-editor-overlay')) return true;
+  return element.dataset.editorRuntime === '1';
+}
+function removeRuntimeOverlayNodes(root) {
+  if (!root?.querySelectorAll) return 0;
+  const nodes = Array.from(root.querySelectorAll(RUNTIME_OVERLAY_SELECTOR));
+  for (const node of nodes) {
+    if (!node?.isConnected) continue;
+    node.remove();
+  }
+  return nodes.length;
+}
+
+
 /* ===== src/core/slot-detector.js ===== */
 
 function directTextContent(element) {
@@ -1209,7 +1235,7 @@ function collectSlotCandidates(doc, { markDom = true } = {}) {
   const elements = Array.from(doc.body?.querySelectorAll('*') || []);
   for (const element of elements) {
     if (seen.has(element)) continue;
-    if (element.dataset.slotIgnore === '1' || element.dataset.editorRuntime === '1') continue;
+    if (element.dataset.slotIgnore === '1' || isRuntimeOverlayElement(element)) continue;
     if (BLOCKED_TAGS.has(element.tagName) || ['IMG', 'SOURCE', 'LINK'].includes(element.tagName)) continue;
     const result = evaluateCandidate(element);
     const label = buildLabel(element);
@@ -1363,6 +1389,7 @@ function normalizeProject({
 }) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(String(html || ''), 'text/html');
+  removeRuntimeOverlayNodes(doc);
   const resolver = createAssetResolver(fileIndex, htmlEntryPath);
   const assets = [];
   const issues = [];
@@ -2028,7 +2055,7 @@ function decodeData(value) {
 
 function stripTransientRuntime(doc) {
   doc.getElementById(FRAME_STYLE_ID)?.remove();
-  for (const runtimeNode of Array.from(doc.querySelectorAll('[data-editor-runtime="1"]'))) runtimeNode.remove();
+  removeRuntimeOverlayNodes(doc);
   for (const element of Array.from(doc.querySelectorAll('*'))) {
     const nextClass = removeEditorCssClasses(element.getAttribute('class') || '');
     if (nextClass) element.setAttribute('class', nextClass);
@@ -2456,31 +2483,32 @@ function createFrameEditor({
 
   function ensureOverlayNodes() {
     if (overlayNodes) return overlayNodes;
-    const marquee = doc.createElement('div');
+    let overlayRoot = doc.getElementById(FRAME_OVERLAY_ID);
+    if (!overlayRoot) {
+      overlayRoot = markRuntimeOverlay(doc.createElement('div'), 'interaction-root');
+      overlayRoot.id = FRAME_OVERLAY_ID;
+      doc.body.appendChild(overlayRoot);
+    }
+    const marquee = markRuntimeOverlay(doc.createElement('div'), 'marquee');
     marquee.className = '__phase6_marquee_box';
-    marquee.dataset.editorRuntime = '1';
-    const lineX = doc.createElement('div');
+    const lineX = markRuntimeOverlay(doc.createElement('div'), 'snap-line-x');
     lineX.className = '__phase6_snap_line_x';
-    lineX.dataset.editorRuntime = '1';
-    const lineY = doc.createElement('div');
+    const lineY = markRuntimeOverlay(doc.createElement('div'), 'snap-line-y');
     lineY.className = '__phase6_snap_line_y';
-    lineY.dataset.editorRuntime = '1';
-    const resizeBox = doc.createElement('div');
+    const resizeBox = markRuntimeOverlay(doc.createElement('div'), 'resize-box');
     resizeBox.className = '__phase7_resize_box';
-    resizeBox.dataset.editorRuntime = '1';
     resizeBox.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;display:none;z-index:999998;border:1px solid rgba(14,165,233,0.95);pointer-events:none;box-shadow:0 0 0 1px rgba(255,255,255,0.55)';
     const handles = {};
     for (const corner of ['nw', 'ne', 'sw', 'se']) {
-      const handle = doc.createElement('button');
+      const handle = markRuntimeOverlay(doc.createElement('button'), `resize-handle-${corner}`);
       handle.type = 'button';
       handle.className = '__phase7_resize_handle';
-      handle.dataset.editorRuntime = '1';
       handle.dataset.resizeCorner = corner;
       handle.style.cssText = 'position:fixed;width:12px;height:12px;border-radius:999px;border:2px solid #fff;background:#0ea5e9;z-index:999999;display:none;padding:0;cursor:nwse-resize';
       if (corner === 'ne' || corner === 'sw') handle.style.cursor = 'nesw-resize';
       handles[corner] = handle;
     }
-    doc.body.append(marquee, lineX, lineY, resizeBox, handles.nw, handles.ne, handles.sw, handles.se);
+    overlayRoot.replaceChildren(marquee, lineX, lineY, resizeBox, handles.nw, handles.ne, handles.sw, handles.se);
     overlayNodes = { marquee, lineX, lineY, resizeBox, handles };
     return overlayNodes;
   }
@@ -3505,23 +3533,19 @@ function createFrameEditor({
 
   function ensureImageCropOverlay(state) {
     if (!state?.slot) return null;
-    let overlay = state.slot.querySelector(':scope > .__phase6_crop_overlay[data-editor-runtime="1"]');
+    let overlay = state.slot.querySelector(':scope > .__phase6_crop_overlay[data-editor-overlay="crop"]');
     if (!overlay) {
-      overlay = doc.createElement('div');
+      overlay = markRuntimeOverlay(doc.createElement('div'), 'crop');
       overlay.className = '__phase6_crop_overlay';
-      overlay.dataset.editorRuntime = '1';
-      const safeArea = doc.createElement('div');
+      const safeArea = markRuntimeOverlay(doc.createElement('div'), 'crop-safearea');
       safeArea.className = '__phase6_crop_safearea';
-      safeArea.dataset.editorRuntime = '1';
       overlay.appendChild(safeArea);
-      const lockOverlay = doc.createElement('div');
+      const lockOverlay = markRuntimeOverlay(doc.createElement('div'), 'crop-lock');
       lockOverlay.className = '__phase6_crop_lock_overlay';
-      lockOverlay.dataset.editorRuntime = '1';
       lockOverlay.innerHTML = '<span>이미지 잠금 · 해제 후 편집</span>';
       overlay.appendChild(lockOverlay);
-      const hud = doc.createElement('div');
+      const hud = markRuntimeOverlay(doc.createElement('div'), 'crop-hud');
       hud.className = '__phase6_crop_hud';
-      hud.dataset.editorRuntime = '1';
       overlay.appendChild(hud);
       if (!/(relative|absolute|fixed|sticky)/i.test(win.getComputedStyle(state.slot).position || '')) {
         setInlineStyle(state.slot, { position: 'relative' });
@@ -3542,7 +3566,7 @@ function createFrameEditor({
 
   function removeImageCropOverlay(state) {
     if (!state?.slot) return;
-    for (const node of Array.from(state.slot.querySelectorAll(':scope > .__phase6_crop_overlay[data-editor-runtime="1"]'))) node.remove();
+    for (const node of Array.from(state.slot.querySelectorAll(':scope > .__phase6_crop_overlay[data-editor-overlay="crop"]'))) node.remove();
   }
 
   function beginImageCropPan(event) {

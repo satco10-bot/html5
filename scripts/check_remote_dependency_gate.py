@@ -42,7 +42,7 @@ def classify_findings(findings: list[dict[str, object]]) -> tuple[list[dict[str,
     for row in findings:
         file_path = str(row['file'])
         line = int(row['line'])
-        if file_path == 'src/editor/frame-editor.js' and line in (2656, 3280, 3292):
+        if file_path == 'src/editor/frame-editor.js' and line in (2654, 3278, 3290):
             optional.append({
                 **row,
                 'classification': 'optional',
