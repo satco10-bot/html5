@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / 'evals' / 'reports' / 'HARNESS_GATE_RESULTS.json'
+PERF_REPORT = ROOT / 'reports' / 'PERF_VALIDATOR_RESULTS.json'
 REQUIRED = [
     ROOT / 'AGENTS.md',
     ROOT / 'docs' / 'SPEC.md',
@@ -48,13 +49,30 @@ def main() -> int:
         ['python3', 'scripts/build_local_bundle.py'],
         ['node', '--check', 'app.bundle.js'],
         ['python3', 'scripts/check_remote_dependency_gate.py'],
+        ['python3', 'scripts/validate_perf_budgets.py'],
         ['python3', 'scripts/validate_phase8.py'],
     ]
     results = [run(c) for c in commands]
 
+    perf_summary = {}
+    if PERF_REPORT.exists():
+        try:
+            perf_payload = json.loads(PERF_REPORT.read_text(encoding='utf-8'))
+            perf_summary = {
+                'ok': bool(perf_payload.get('ok')),
+                'mode': perf_payload.get('mode'),
+                'metrics_source': perf_payload.get('metrics_source'),
+                'summary': perf_payload.get('summary', {}),
+            }
+        except json.JSONDecodeError:
+            perf_summary = {'ok': False, 'error': f'invalid json: {PERF_REPORT.relative_to(ROOT)}'}
+    else:
+        perf_summary = {'ok': False, 'error': f'missing report: {PERF_REPORT.relative_to(ROOT)}'}
+
     report = {
         'required_checks': checks,
         'command_results': results,
+        'perf_validator': perf_summary,
         'ok': all(c['ok'] for c in checks) and all(r['ok'] for r in results),
     }
     REPORT.parent.mkdir(parents=True, exist_ok=True)
