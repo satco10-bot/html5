@@ -1188,11 +1188,10 @@ function buildSaveMetaSummary() {
 }
 
 function syncSaveFormatUi() {
-  currentSaveFormat = normalizeSaveFormat(elements.saveFormatSelect?.value || currentSaveFormat, {
+  currentSaveFormat = normalizeSaveFormat(store.getState().saveFormat || currentSaveFormat, {
     allowEmbedded: true,
     reason: 'explicit-user-choice',
   });
-  store.setSaveFormat(currentSaveFormat, { allowEmbedded: true, reason: 'explicit-user-choice' });
   if (elements.saveFormatSelect && elements.saveFormatSelect.value !== currentSaveFormat) {
     elements.saveFormatSelect.value = currentSaveFormat;
   }
@@ -5655,7 +5654,6 @@ elements.saveFormatSelect?.addEventListener('change', () => {
     reason: 'explicit-user-choice',
   });
   store.setSaveFormat(currentSaveFormat, { allowEmbedded: true, reason: 'explicit-user-choice' });
-  syncSaveFormatUi();
   setStatus(`저장 포맷을 ${currentSaveFormat}로 변경했습니다.`);
 });
 bindElementEvent('downloadReportButton', 'click', downloadReportJson);
