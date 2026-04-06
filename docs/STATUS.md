@@ -51,6 +51,11 @@
 ### 남은 리스크
 - 원격 호출 분류는 현재 허용 목록 기반(정적 규칙)이라, 새로운 원격 API 사용이 추가되면 허용 목록/분류 규칙을 같이 갱신해야 한다.
 
+## 2026-04-06 추가 업데이트 (perf validator)
+- `docs/PERF_BUDGETS.md`에 이미지 삽입/썸네일/diff/iframe 안정화 4개 항목을 `metric_id + 예산(ms) + 계측 포인트` 형태로 명시했다.
+- `scripts/validate_perf_budgets.py`를 추가해 계측 포인트(코드 anchor) 존재 여부를 검사하고, 프로브 결과(`evals/reports/PERF_PROBES.json` 또는 `reports/PERF_PROBES.json`)를 예산과 비교하도록 했다.
+- 단계적 기준을 도입했다: `PERF_BUDGET_MODE=warn`(기본)은 초과를 경고로 처리, `PERF_BUDGET_MODE=enforce`는 예산 30% 초과를 실패로 처리한다. 계측 포인트 누락은 두 모드 모두 실패다.
+- `scripts/run_harness_gate.py` 명령 흐름에 perf validator를 추가했고, `reports/PERF_VALIDATOR_RESULTS.json` 요약을 gate 결과 JSON에 수집한다.
 ## 2026-04-06 추가 업데이트 (런타임 오버레이 직렬화 가드)
 - `src/core/runtime-overlay.js`를 추가해 런타임 오버레이 DOM 식별자(`data-editor-overlay`, `data-editor-runtime`, `__phase5_local_editor_overlay`)를 공통 정의했다.
 - `src/editor/frame-editor.js`의 인터랙션/크롭 오버레이 생성 경로를 위 식별자로 통일하고, 저장 직전 직렬화 단계에서 `removeRuntimeOverlayNodes()`로 오버레이 제거를 공통 처리하도록 정리했다.
@@ -61,11 +66,11 @@
 ### 이번 작업 검증
 - `python3 scripts/build_local_bundle.py`
 - `node --check app.bundle.js`
-- `python3 scripts/check_remote_dependency_gate.py`
+- `python3 scripts/validate_perf_budgets.py`
 - `python3 scripts/validate_phase8.py`
 - `python3 scripts/run_harness_gate.py`
 
 ### 남은 리스크
-- 원격 의존 게이트의 optional 분류가 line number 기반이라, 관련 코드 이동 시 허용 목록 업데이트를 놓치면 validate가 실패할 수 있다.
+- 현재 저장소에는 성능 프로브 샘플 파일이 기본 포함되어 있지 않아, 실제 수치 판정은 경고 위주(`missing`)로 남을 수 있다. QA/하네스에서 `PERF_PROBES.json` 생성 경로를 정착시켜야 enforce 모드의 효용이 커진다.
 - save mode gate는 정적 패턴 + 핵심 함수 실행 기반이라, 저장 플로우 구조가 크게 바뀌면 패턴도 함께 갱신해야 한다.
 - save format 상태 동기화는 이제 store 단방향 흐름에 의존하므로, 향후 UI에서 임의 값을 직접 대입하는 코드가 추가되면 동일한 재진입 문제가 다시 생기지 않게 리뷰에서 확인해야 한다.

@@ -5,7 +5,7 @@ runtime asset 기반 성능 문제를 더 줄인다.
 - autosave/project snapshot의 IndexedDB 1차 이전
 - runtime asset GC
 - preview/original/thumb 3단 구조의 최소 구현
-- perf validator 추가
+- perf validator 추가 (`scripts/validate_perf_budgets.py`, `warn/enforce` 단계 도입)
 
 ## Non-goals
 - 대규모 UI 리디자인
@@ -25,5 +25,6 @@ runtime asset 기반 성능 문제를 더 줄인다.
 ## Validation
 - python3 scripts/build_local_bundle.py
 - node --check app.bundle.js
+- python3 scripts/validate_perf_budgets.py
 - python3 scripts/validate_phase8.py
 - python3 scripts/run_harness_gate.py
