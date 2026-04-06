@@ -1,0 +1,18 @@
+{
+  "summary": {
+    "ok": true,
+    "check_count": 183,
+    "passed": 183,
+    "failed": 0,
+    "bundle_bytes": 687793,
+    "bundle_sha256": "2b11a1686efd69923f7c86f86d55bf78bf8234d248d1078d556019f48e56289f",
+    "browser_smoke_status": "blocked",
+    "failure_type": "none"
+  },
+  "runtime_asset_checks": {
+    "frame_avoids_dataurl_slot_insertion": true,
+    "runtime_asset_module_present": true,
+    "linked_export_materializes_runtime_assets": true,
+    "autosave_snapshot_tracks_runtime_asset_ids": true
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "summary": {
+    "passed": 21,
+    "failed": 0,
+    "count": 21
+  },
+  "checks": [
+    {
+      "name": "index_has_designTokenList",
+      "ok": true
+    },
+    {
+      "name": "index_has_refreshDesignTokenButton",
+      "ok": true
+    },
+    {
+      "name": "index_has_applyDesignTokenButton",
+      "ok": true
+    },
+    {
+      "name": "index_has_inlineColorExtractList",
+      "ok": true
+    },
+    {
+      "name": "index_has_refreshInlineColorExtractButton",
+      "ok": true
+    },
+    {
+      "name": "index_has_extractInlineColorVarsButton",
+      "ok": true
+    },
+    {
+      "name": "index_has_sectionThemePaletteList",
+      "ok": true
+    },
+    {
+      "name": "index_has_refreshSectionThemeButton",
+      "ok": true
+    },
+    {
+      "name": "index_has_applySectionThemeButton",
+      "ok": true
+    },
+    {
+      "name": "index_has_contrastLintList",
+      "ok": true
+    },
+    {
+      "name": "index_has_runContrastLintButton",
+      "ok": true
+    },
+    {
+      "name": "index_has_codeCompareColorOnlyButton",
+      "ok": true
+    },
+    {
+      "name": "main_has_extractCssDesignTokensFromHtml",
+      "ok": true
+    },
+    {
+      "name": "main_has_renderDesignTokenEditor",
+      "ok": true
+    },
+    {
+      "name": "main_has_extractRepeatedInlineColorCandidatesFromHtml",
+      "ok": true
+    },
+    {
+      "name": "main_has_renderInlineColorExtractPanel",
+      "ok": true
+    },
+    {
+      "name": "main_has_extractSectionThemePalettesFromHtml",
+      "ok": true
+    },
+    {
+      "name": "main_has_renderSectionThemePalettes",
+      "ok": true
+    },
+    {
+      "name": "main_has_buildContrastLintIssuesFromPreview",
+      "ok": true
+    },
+    {
+      "name": "main_has_renderContrastLintPanel",
+      "ok": true
+    },
+    {
+      "name": "main_has_chunkLooksColorRelated",
+      "ok": true
+    }
+  ]
+}

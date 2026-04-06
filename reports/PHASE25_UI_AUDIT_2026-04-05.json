@@ -1,0 +1,10 @@
+{
+  "buttons": 190,
+  "inputs": 24,
+  "selects": 13,
+  "details": 12,
+  "sidebar_tabs": 8,
+  "quickbar_buttons": 16,
+  "download_actions": 8,
+  "section_menu_actions_per_card": 0
+}
