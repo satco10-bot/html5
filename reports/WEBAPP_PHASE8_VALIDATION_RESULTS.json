@@ -1,12 +1,12 @@
 {
   "summary": {
     "ok": true,
-    "check_count": 183,
-    "passed": 183,
+    "check_count": 185,
+    "passed": 185,
     "failed": 0,
-    "bundle_bytes": 687793,
-    "bundle_sha256": "2b11a1686efd69923f7c86f86d55bf78bf8234d248d1078d556019f48e56289f",
-    "browser_smoke_status": "blocked",
+    "bundle_bytes": 688903,
+    "bundle_sha256": "e38498aa5fa3d113e5c2d03bc373966f04f4ce109a5d41ba8bf46e1fdce8e221",
+    "browser_smoke_status": "unavailable",
     "failure_type": "none"
   },
   "check_versions": {
@@ -731,6 +731,16 @@
       "detail": "autosave/snapshot restore should reload runtime assets before mount"
     },
     {
+      "name": "constraints_remote_dependency_gate",
+      "ok": true,
+      "detail": "ok(optional_findings=3)"
+    },
+    {
+      "name": "constraints_save_mode_gate",
+      "ok": true,
+      "detail": "ok(checks=8)"
+    },
+    {
       "name": "main_has_no_duplicate_top_level_functions",
       "ok": true,
       "detail": "ok"
@@ -748,7 +758,7 @@
     {
       "name": "fixture_exists_F01",
       "ok": true,
-      "detail": "/mnt/data/perf_v26/detail-page-local-editor-codex-ready/data/fixtures/fixture_01_blank_builder_860.html"
+      "detail": "/workspace/html5/data/fixtures/fixture_01_blank_builder_860.html"
     },
     {
       "name": "F01_selector_[data-image-slot='hero-main']",
@@ -773,7 +783,7 @@
     {
       "name": "fixture_exists_F02",
       "ok": true,
-      "detail": "/mnt/data/perf_v26/detail-page-local-editor-codex-ready/data/fixtures/fixture_02_sample_shop_builder_860.html"
+      "detail": "/workspace/html5/data/fixtures/fixture_02_sample_shop_builder_860.html"
     },
     {
       "name": "F02_selector_[data-image-slot='hero-main']",
@@ -813,7 +823,7 @@
     {
       "name": "fixture_exists_F03",
       "ok": true,
-      "detail": "/mnt/data/perf_v26/detail-page-local-editor-codex-ready/data/fixtures/fixture_03_sample_template_existing_html.html"
+      "detail": "/workspace/html5/data/fixtures/fixture_03_sample_template_existing_html.html"
     },
     {
       "name": "F03_pattern_[data-image-slot='hero-main']",
@@ -833,7 +843,7 @@
     {
       "name": "fixture_exists_F04",
       "ok": true,
-      "detail": "/mnt/data/perf_v26/detail-page-local-editor-codex-ready/data/fixtures/fixture_04_sample_dring_walk_allinone.html"
+      "detail": "/workspace/html5/data/fixtures/fixture_04_sample_dring_walk_allinone.html"
     },
     {
       "name": "F04_pattern_.ph.hero-visual",
@@ -873,7 +883,7 @@
     {
       "name": "fixture_exists_F05",
       "ok": true,
-      "detail": "/mnt/data/perf_v26/detail-page-local-editor-codex-ready/data/fixtures/fixture_05_user_melting_cheese_compact.html"
+      "detail": "/workspace/html5/data/fixtures/fixture_05_user_melting_cheese_compact.html"
     },
     {
       "name": "F05_pattern_.hero-shot.media-shell",
@@ -923,16 +933,16 @@
     {
       "name": "playwright_smoke_uses_file_protocol",
       "ok": true,
-      "detail": "file:///mnt/data/perf_v26/detail-page-local-editor-codex-ready/index.html"
+      "detail": "file:///workspace/html5/index.html"
     },
     {
       "name": "file_protocol_smoke_gate",
       "ok": true,
-      "detail": "soft-skip: {\"status\": \"blocked\", \"error\": \"Page.goto: net::ERR_BLOCKED_BY_ADMINISTRATOR at file:///mnt/data/perf_v26/detail-page-local-editor-codex-ready/index.html\\nCall log:\\n  - navigating to \\\"file:///mnt/data/perf_v26/detail-page-local-editor-codex-ready/index.html\\\", waiting until \\\"load\\\"\\n\"}"
+      "detail": "{\"status\": \"unavailable\", \"error\": \"No module named 'playwright'\"}"
     }
   ],
   "browser_smoke": {
-    "status": "blocked",
-    "error": "Page.goto: net::ERR_BLOCKED_BY_ADMINISTRATOR at file:///mnt/data/perf_v26/detail-page-local-editor-codex-ready/index.html\nCall log:\n  - navigating to \"file:///mnt/data/perf_v26/detail-page-local-editor-codex-ready/index.html\", waiting until \"load\"\n"
+    "status": "unavailable",
+    "error": "No module named 'playwright'"
   }
 }

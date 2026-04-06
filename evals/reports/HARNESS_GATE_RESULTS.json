@@ -1,0 +1,86 @@
+{
+  "required_checks": [
+    {
+      "name": "exists:AGENTS.md",
+      "ok": true
+    },
+    {
+      "name": "exists:docs/SPEC.md",
+      "ok": true
+    },
+    {
+      "name": "exists:docs/CONSTRAINTS.md",
+      "ok": true
+    },
+    {
+      "name": "exists:docs/ARCHITECTURE.md",
+      "ok": true
+    },
+    {
+      "name": "exists:docs/STATUS.md",
+      "ok": true
+    },
+    {
+      "name": "exists:docs/PERF_BUDGETS.md",
+      "ok": true
+    },
+    {
+      "name": "exists:docs/plans/active/2026-04-runtime-assets-phase2.md",
+      "ok": true
+    }
+  ],
+  "command_results": [
+    {
+      "cmd": [
+        "python3",
+        "scripts/build_local_bundle.py"
+      ],
+      "returncode": 0,
+      "stdout_tail": "Wrote /workspace/html5/app.bundle.js\n",
+      "stderr_tail": "",
+      "ok": true
+    },
+    {
+      "cmd": [
+        "node",
+        "--check",
+        "app.bundle.js"
+      ],
+      "returncode": 0,
+      "stdout_tail": "",
+      "stderr_tail": "",
+      "ok": true
+    },
+    {
+      "cmd": [
+        "node",
+        "scripts/check_save_mode_gate.mjs"
+      ],
+      "returncode": 0,
+      "stdout_tail": "{\n  \"ok\": true,\n  \"checks\": [\n    {\n      \"name\": \"normalize_save_format_defaults_to_linked\",\n      \"ok\": true,\n      \"detail\": \"embedded는 명시적 예외(reason=explicit-user-choice)일 때만 허용되어야 합니다.\"\n    },\n    {\n      \"name\": \"normalize_save_format_allows_embedded_only_explicitly\",\n      \"ok\": true,\n      \"detail\": \"allowEmbedded + explicit-user-choice 조합 외에는 embedded를 linked로 강등해야 합니다.\"\n    },\n    {\n      \"name\": \"project_store_default_save_mode_is_linked\",\n      \"ok\": true,\n      \"detail\": \"default=linked\"\n    },\n    {\n      \"name\": \"project_store_embedded_requires_explicit_exception\",\n      \"ok\": true,\n      \"detail\": \"blocked=linked, explicit=embedded\"\n    },\n    {\n      \"name\": \"main_default_save_mode_literal_is_linked\",\n      \"ok\": true,\n      \"detail\": \"main.js의 현재 저장 포맷 기본값은 linked여야 합니다.\"\n    },\n    {\n      \"name\": \"main_embedded_branch_is_explicit_exception_only\",\n      \"ok\": true,\n      \"detail\": \"embedded 허용 분기는 explicit-user-choice 예외로 분리되어야 합니다.\"\n    },\n    {\n      \"name\": \"main_default_save_path_avoids_embedded_literal_call\",\n      \"ok\": true,\n      \"detail\": \"기본 저장 경로에서 embedded 직접 호출은 금지합니다.\"\n    },\n    {\n      \"name\": \"main_default_save_path_no_data_url_generation_pattern\",\n      \"ok\": true,\n      \"detail\": \"기본 저장 함수(downloadEditedHtml) 경로에는 data URL 생성/저장 로직이 없어야 합니다.\"\n    }\n  ]\n}\n",
+      "stderr_tail": "(node:5701) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/html5/src/core/project-store.js is not specified and it doesn't parse as CommonJS.\nReparsing as ES module because module syntax was detected. This incurs a performance overhead.\nTo eliminate this warning, add \"type\": \"module\" to /workspace/html5/package.json.\n(Use `node --trace-warnings ...` to show where the warning was created)\n",
+      "ok": true
+    },
+    {
+      "cmd": [
+        "python3",
+        "scripts/check_remote_dependency_gate.py"
+      ],
+      "returncode": 0,
+      "stdout_tail": "{\n  \"ok\": true,\n  \"scope\": [\n    \"src/main.js\",\n    \"src/editor\",\n    \"src/core\"\n  ],\n  \"missing_targets\": [],\n  \"findings_total\": 3,\n  \"optional_findings\": [\n    {\n      \"file\": \"src/editor/frame-editor.js\",\n      \"line\": 2656,\n      \"token\": \"fetch(\",\n      \"snippet\": \"const response = await fetch(value);\",\n      \"classification\": \"optional\",\n      \"reason\": \"blob/data/runtime-asset 변환용 fetch로, 초기 부팅/기본 편집 필수 경로가 아님\"\n    },\n    {\n      \"file\": \"src/editor/frame-editor.js\",\n      \"line\": 3280,\n      \"token\": \"fetch(\",\n      \"snippet\": \"const response = await fetch(value);\",\n      \"classification\": \"optional\",\n      \"reason\": \"blob/data/runtime-asset 변환용 fetch로, 초기 부팅/기본 편집 필수 경로가 아님\"\n    },\n    {\n      \"file\": \"src/editor/frame-editor.js\",\n      \"line\": 3292,\n      \"token\": \"fetch(\",\n      \"snippet\": \"const response = await fetch(value);\",\n      \"classification\": \"optional\",\n      \"reason\": \"blob/data/runtime-asset 변환용 fetch로, 초기 부팅/기본 편집 필수 경로가 아님\"\n    }\n  ],\n  \"required_or_unknown_findings\": [],\n  \"checklist\": [\n    {\n      \"name\": \"constraint_file_protocol_local_boot\",\n      \"ok\": true,\n      \"detail\": \"정적 검사 스코프는 src/main.js, src/editor/, src/core/ 입니다.\"\n    },\n    {\n      \"name\": \"constraint_no_required_server_https_remote_api_on_boot\",\n      \"ok\": true,\n      \"detail\": \"필수/미분류 원격 호출 후보 수=0\"\n    },\n    {\n      \"name\": \"constraint_remote_calls_are_optional_only\",\n      \"ok\": true,\n      \"detail\": \"선택 기능으로 분류된 호출 수=3\"\n    }\n  ]\n}\n",
+      "stderr_tail": "",
+      "ok": true
+    },
+    {
+      "cmd": [
+        "python3",
+        "scripts/validate_phase8.py"
+      ],
+      "returncode": 0,
+      "stdout_tail": "\n    },\n    {\n      \"name\": \"F02_selector_[data-image-slot='hero-main']\",\n      \"ok\": true,\n      \"detail\": \"count=1\"\n    },\n    {\n      \"name\": \"F02_selector_[data-image-slot='fit-main']\",\n      \"ok\": true,\n      \"detail\": \"count=1\"\n    },\n    {\n      \"name\": \"F02_selector_[data-image-slot='fit-sub-1']\",\n      \"ok\": true,\n      \"detail\": \"count=1\"\n    },\n    {\n      \"name\": \"F02_selector_[data-image-slot='fit-sub-2']\",\n      \"ok\": true,\n      \"detail\": \"count=1\"\n    },\n    {\n      \"name\": \"F02_selector_[data-image-slot='detail-long-1']\",\n      \"ok\": true,\n      \"detail\": \"count=1\"\n    },\n    {\n      \"name\": \"F02_selector_[data-image-slot='detail-long-2']\",\n      \"ok\": true,\n      \"detail\": \"count=1\"\n    },\n    {\n      \"name\": \"F02_required_exact_count\",\n      \"ok\": true,\n      \"detail\": \"expected=6, actual=6\"\n    },\n    {\n      \"name\": \"fixture_exists_F03\",\n      \"ok\": true,\n      \"detail\": \"/workspace/html5/data/fixtures/fixture_03_sample_template_existing_html.html\"\n    },\n    {\n      \"name\": \"F03_pattern_[data-image-slot='hero-main']\",\n      \"ok\": true,\n      \"detail\": \"expected=1, actual=1\"\n    },\n    {\n      \"name\": \"F03_pattern_.card-image.image-slot\",\n      \"ok\": true,\n      \"detail\": \"expected=3, actual=3\"\n    },\n    {\n      \"name\": \"F03_required_exact_from_groups\",\n      \"ok\": true,\n      \"detail\": \"expected=4, actual=4\"\n    },\n    {\n      \"name\": \"fixture_exists_F04\",\n      \"ok\": true,\n      \"detail\": \"/workspace/html5/data/fixtures/fixture_04_sample_dring_walk_allinone.html\"\n    },\n    {\n      \"name\": \"F04_pattern_.ph.hero-visual\",\n      \"ok\": true,\n      \"detail\": \"expected=1, actual=1\"\n    },\n    {\n      \"name\": \"F04_pattern_.ph.visual\",\n      \"ok\": true,\n      \"detail\": \"expected=3, actual=3\"\n    },\n    {\n      \"name\": \"F04_pattern_.ph.c-box\",\n      \"ok\": true,\n      \"detail\": \"expected=6, actual=6\"\n    },\n    {\n      \"name\": \"F04_pattern_.warn-card .ph.img\",\n      \"ok\": true,\n      \"detail\": \"expected=2, actual=2\"\n    },\n    {\n      \"name\": \"F04_pattern_.step-wrap .ph.img\",\n      \"ok\": true,\n      \"detail\": \"expected=3, actual=3\"\n    },\n    {\n      \"name\": \"F04_pattern_.cta-char\",\n      \"ok\": true,\n      \"detail\": \"expected=1, actual=1\"\n    },\n    {\n      \"name\": \"F04_required_min_from_groups\",\n      \"ok\": true,\n      \"detail\": \"min=16, actual=16\"\n    },\n    {\n      \"name\": \"fixture_exists_F05\",\n      \"ok\": true,\n      \"detail\": \"/workspace/html5/data/fixtures/fixture_05_user_melting_cheese_compact.html\"\n    },\n    {\n      \"name\": \"F05_pattern_.hero-shot.media-shell\",\n      \"ok\": true,\n      \"detail\": \"expected=1, actual=1\"\n    },\n    {\n      \"name\": \"F05_pattern_.option-list .opt-thumb.media-shell\",\n      \"ok\": true,\n      \"detail\": \"expected=2, actual=2\"\n    },\n    {\n      \"name\": \"F05_pattern_section.bg-ivory > .media-shell\",\n      \"ok\": true,\n      \"detail\": \"expected=1, actual=1\"\n    },\n    {\n      \"name\": \"F05_pattern_.ba-wrap .media-shell\",\n      \"ok\": true,\n      \"detail\": \"expected=2, actual=2\"\n    },\n    {\n      \"name\": \"F05_pattern_.set-grid .thumb.media-shell\",\n      \"ok\": true,\n      \"detail\": \"expected=3, actual=3\"\n    },\n    {\n      \"name\": \"F05_pattern_.point-hero .visual.media-shell\",\n      \"ok\": true,\n      \"detail\": \"expected=4, actual=4\"\n    },\n    {\n      \"name\": \"F05_required_exact_from_groups\",\n      \"ok\": true,\n      \"detail\": \"expected=13, actual=13\"\n    },\n    {\n      \"name\": \"F05_has_two_uploaded_img_refs\",\n      \"ok\": true,\n      \"detail\": \"uploaded_count=2\"\n    },\n    {\n      \"name\": \"F05_has_media_shells\",\n      \"ok\": true,\n      \"detail\": \"expected real-world slot patterns\"\n    },\n    {\n      \"name\": \"playwright_smoke_uses_file_protocol\",\n      \"ok\": true,\n      \"detail\": \"file:///workspace/html5/index.html\"\n    },\n    {\n      \"name\": \"file_protocol_smoke_gate\",\n      \"ok\": true,\n      \"detail\": \"{\\\"status\\\": \\\"unavailable\\\", \\\"error\\\": \\\"No module named 'playwright'\\\"}\"\n    }\n  ],\n  \"browser_smoke\": {\n    \"status\": \"unavailable\",\n    \"error\": \"No module named 'playwright'\"\n  }\n}\n",
+      "stderr_tail": "",
+      "ok": true
+    }
+  ],
+  "ok": true
+}
