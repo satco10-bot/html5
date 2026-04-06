@@ -29,6 +29,7 @@ SLOT_DETECTOR_SRC = ROOT / 'src' / 'core' / 'slot-detector.js'
 REPORT = ROOT / 'reports' / 'WEBAPP_PHASE8_VALIDATION_RESULTS.json'
 SPEC_COMPARE_REPORT = ROOT / 'reports' / 'WEBAPP_PHASE8_SPEC_COMPARE.md'
 REMOTE_DEP_REPORT = ROOT / 'reports' / 'REMOTE_DEPENDENCY_GATE_RESULTS.json'
+SAVE_MODE_REPORT = ROOT / 'reports' / 'SAVE_MODE_GATE_RESULTS.json'
 
 CHECK_VERSIONS = {
     'selection_png': 'v2_computeUnionBoundingBoxFromSelectedNodeUids+selectionExportPolicy',
@@ -337,6 +338,36 @@ def run_remote_dependency_gate() -> dict[str, Any]:
     }
 
 
+def run_save_mode_gate() -> dict[str, Any]:
+    cmd = ['node', str(ROOT / 'scripts' / 'check_save_mode_gate.mjs')]
+    try:
+        completed = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+    except FileNotFoundError as error:
+        return {
+            'ok': False,
+            'error': f'dependency missing: {error}',
+            'summary': {},
+        }
+
+    payload: dict[str, Any] = {}
+    output = (completed.stdout or '').strip()
+    if output:
+        try:
+            payload = json.loads(output)
+        except json.JSONDecodeError:
+            payload = {}
+    if payload:
+        SAVE_MODE_REPORT.parent.mkdir(parents=True, exist_ok=True)
+        SAVE_MODE_REPORT.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
+
+    return {
+        'ok': completed.returncode == 0 and bool(payload.get('ok', False)),
+        'returncode': completed.returncode,
+        'payload': payload,
+        'stderr': (completed.stderr or '').strip()[-500:],
+    }
+
+
 def main() -> None:
     index_html = INDEX.read_text(encoding='utf-8')
     bundle_js = BUNDLE.read_text(encoding='utf-8')
@@ -497,6 +528,17 @@ def main() -> None:
             'stderr': remote_dep_gate.get('stderr', ''),
         }, ensure_ascii=False)
     add_check(checks, 'constraints_remote_dependency_gate', bool(remote_dep_gate.get('ok')), remote_detail)
+    save_mode_gate = run_save_mode_gate()
+    save_mode_payload = save_mode_gate.get('payload', {}) if isinstance(save_mode_gate, dict) else {}
+    if save_mode_gate.get('ok'):
+        save_mode_detail = f"ok(checks={len(save_mode_payload.get('checks', []))})"
+    else:
+        save_mode_detail = json.dumps({
+            'returncode': save_mode_gate.get('returncode'),
+            'stderr': save_mode_gate.get('stderr', ''),
+            'checks': save_mode_payload.get('checks', []),
+        }, ensure_ascii=False)
+    add_check(checks, 'constraints_save_mode_gate', bool(save_mode_gate.get('ok')), save_mode_detail)
 
     duplicate_main_functions = find_duplicate_same_scope_function_names(main_js, indent=0)
     duplicate_frame_functions = find_duplicate_same_scope_function_names(frame_js, indent=2)

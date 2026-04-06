@@ -1,0 +1,54 @@
+{
+  "ok": true,
+  "scope": [
+    "src/main.js",
+    "src/editor",
+    "src/core"
+  ],
+  "missing_targets": [],
+  "findings_total": 3,
+  "optional_findings": [
+    {
+      "file": "src/editor/frame-editor.js",
+      "line": 2656,
+      "token": "fetch(",
+      "snippet": "const response = await fetch(value);",
+      "classification": "optional",
+      "reason": "blob/data/runtime-asset 변환용 fetch로, 초기 부팅/기본 편집 필수 경로가 아님"
+    },
+    {
+      "file": "src/editor/frame-editor.js",
+      "line": 3280,
+      "token": "fetch(",
+      "snippet": "const response = await fetch(value);",
+      "classification": "optional",
+      "reason": "blob/data/runtime-asset 변환용 fetch로, 초기 부팅/기본 편집 필수 경로가 아님"
+    },
+    {
+      "file": "src/editor/frame-editor.js",
+      "line": 3292,
+      "token": "fetch(",
+      "snippet": "const response = await fetch(value);",
+      "classification": "optional",
+      "reason": "blob/data/runtime-asset 변환용 fetch로, 초기 부팅/기본 편집 필수 경로가 아님"
+    }
+  ],
+  "required_or_unknown_findings": [],
+  "checklist": [
+    {
+      "name": "constraint_file_protocol_local_boot",
+      "ok": true,
+      "detail": "정적 검사 스코프는 src/main.js, src/editor/, src/core/ 입니다."
+    },
+    {
+      "name": "constraint_no_required_server_https_remote_api_on_boot",
+      "ok": true,
+      "detail": "필수/미분류 원격 호출 후보 수=0"
+    },
+    {
+      "name": "constraint_remote_calls_are_optional_only",
+      "ok": true,
+      "detail": "선택 기능으로 분류된 호출 수=3"
+    }
+  ]
+}

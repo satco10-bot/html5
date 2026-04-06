@@ -21,11 +21,16 @@
 - 현재 발견된 호출은 `src/editor/frame-editor.js`의 blob/data/runtime-asset 변환용 `fetch` 3건이며 선택 기능으로 분류된다.
 - `scripts/validate_phase8.py`에 원격 의존 게이트를 연결해 필수/미분류 원격 의존이 발견되면 validate를 실패 처리하도록 했다.
 - `scripts/run_harness_gate.py` 명령 흐름에도 원격 의존 게이트를 추가했다.
+- `src/core/project-store.js`에 save format 기본값(`linked`)과 정규화 로직을 추가하고, `embedded`는 `reason='explicit-user-choice'` 예외에서만 허용되도록 분기를 분리했다.
+- `scripts/check_save_mode_gate.mjs`를 추가해 project-store 기본 모드/예외 분기/기본 저장 경로의 data URL 비사용 패턴을 검증한다.
+- `scripts/validate_phase8.py`와 `scripts/run_harness_gate.py`에 save mode gate를 연결했다.
+- `src/main.js`의 `syncSaveFormatUi()`에서 store를 다시 갱신하던 경로를 제거해, `renderShell()` 구독 렌더 중 `notify → render → notify` 재진입 루프가 발생하지 않도록 고쳤다.
 
 ### 이번 작업 검증
 - `python3 scripts/build_local_bundle.py`
 - `node --check app.bundle.js`
 - `python3 scripts/check_remote_dependency_gate.py`
+- `node scripts/check_save_mode_gate.mjs`
 - `python3 scripts/validate_phase8.py`
 - `python3 scripts/run_harness_gate.py`
 
@@ -48,3 +53,5 @@
 
 ### 남은 리스크
 - 원격 의존 게이트의 optional 분류가 line number 기반이라, 관련 코드 이동 시 허용 목록 업데이트를 놓치면 validate가 실패할 수 있다.
+- save mode gate는 정적 패턴 + 핵심 함수 실행 기반이라, 저장 플로우 구조가 크게 바뀌면 패턴도 함께 갱신해야 한다.
+- save format 상태 동기화는 이제 store 단방향 흐름에 의존하므로, 향후 UI에서 임의 값을 직접 대입하는 코드가 추가되면 동일한 재진입 문제가 다시 생기지 않게 리뷰에서 확인해야 한다.
