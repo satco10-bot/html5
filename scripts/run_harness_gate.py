@@ -47,6 +47,7 @@ def main() -> int:
     commands = [
         ['python3', 'scripts/build_local_bundle.py'],
         ['node', '--check', 'app.bundle.js'],
+        ['python3', 'scripts/check_remote_dependency_gate.py'],
         ['python3', 'scripts/validate_phase8.py'],
     ]
     results = [run(c) for c in commands]
