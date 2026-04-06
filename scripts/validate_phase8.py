@@ -28,6 +28,7 @@ CONFIG_SRC = ROOT / 'src' / 'config.js'
 SLOT_DETECTOR_SRC = ROOT / 'src' / 'core' / 'slot-detector.js'
 REPORT = ROOT / 'reports' / 'WEBAPP_PHASE8_VALIDATION_RESULTS.json'
 SPEC_COMPARE_REPORT = ROOT / 'reports' / 'WEBAPP_PHASE8_SPEC_COMPARE.md'
+REMOTE_DEP_REPORT = ROOT / 'reports' / 'REMOTE_DEPENDENCY_GATE_RESULTS.json'
 
 CHECK_VERSIONS = {
     'selection_png': 'v2_computeUnionBoundingBoxFromSelectedNodeUids+selectionExportPolicy',
@@ -304,6 +305,38 @@ except Exception as error:
     }
 
 
+def run_remote_dependency_gate() -> dict[str, Any]:
+    cmd = ['python3', str(ROOT / 'scripts' / 'check_remote_dependency_gate.py')]
+    try:
+        completed = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+    except FileNotFoundError as error:
+        return {
+            'ok': False,
+            'error': f'dependency missing: {error}',
+            'summary': {},
+        }
+
+    payload: dict[str, Any] = {}
+    output = (completed.stdout or '').strip()
+    if output:
+        try:
+            payload = json.loads(output)
+        except json.JSONDecodeError:
+            payload = {}
+    if not payload and REMOTE_DEP_REPORT.exists():
+        try:
+            payload = json.loads(REMOTE_DEP_REPORT.read_text(encoding='utf-8'))
+        except Exception:
+            payload = {}
+
+    return {
+        'ok': completed.returncode == 0 and bool(payload.get('ok', False)),
+        'returncode': completed.returncode,
+        'payload': payload,
+        'stderr': (completed.stderr or '').strip()[-500:],
+    }
+
+
 def main() -> None:
     index_html = INDEX.read_text(encoding='utf-8')
     bundle_js = BUNDLE.read_text(encoding='utf-8')
@@ -447,6 +480,18 @@ def main() -> None:
     add_check(checks, 'runtime_asset_module_present', (ROOT / 'src' / 'core' / 'runtime-assets.js').exists(), 'runtime asset registry module should exist')
     add_check(checks, 'linked_export_materializes_runtime_assets', 'materializeRuntimeAssetRef' in frame_js and 'runtimeAssetMaterializedCount' in frame_js, 'linked export should write runtime assets into package entries')
     add_check(checks, 'autosave_snapshot_tracks_runtime_asset_ids', 'runtimeAssetIds' in frame_js and 'ensureRuntimeAssetRecords' in main_js, 'autosave/snapshot restore should reload runtime assets before mount')
+    remote_dep_gate = run_remote_dependency_gate()
+    remote_payload = remote_dep_gate.get('payload', {}) if isinstance(remote_dep_gate, dict) else {}
+    remote_required_findings = remote_payload.get('required_or_unknown_findings', []) if isinstance(remote_payload, dict) else []
+    if remote_dep_gate.get('ok'):
+        remote_detail = f"ok(optional_findings={len(remote_payload.get('optional_findings', []))})"
+    else:
+        remote_detail = json.dumps({
+            'returncode': remote_dep_gate.get('returncode'),
+            'required_or_unknown_count': len(remote_required_findings) if isinstance(remote_required_findings, list) else 'n/a',
+            'stderr': remote_dep_gate.get('stderr', ''),
+        }, ensure_ascii=False)
+    add_check(checks, 'constraints_remote_dependency_gate', bool(remote_dep_gate.get('ok')), remote_detail)
 
     duplicate_main_functions = find_duplicate_same_scope_function_names(main_js, indent=0)
     duplicate_frame_functions = find_duplicate_same_scope_function_names(frame_js, indent=2)

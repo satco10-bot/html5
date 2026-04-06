@@ -14,3 +14,20 @@
 - 무엇을 했는지
 - 어떤 검증을 돌렸는지
 - 남은 리스크가 뭔지
+
+## 2026-04-06 업데이트
+- `docs/CONSTRAINTS.md`의 "초기 부팅에 서버/HTTPS/원격 API 필수 의존 금지"를 기계적으로 점검하는 `scripts/check_remote_dependency_gate.py`를 추가했다.
+- 스캔 범위는 `src/main.js`, `src/editor/**/*.js`, `src/core/**/*.js`이며, 원격 호출 토큰(`fetch`, `WebSocket`, `EventSource`, `XMLHttpRequest`)을 수집하고 선택 기능/필수(또는 미분류)로 분류한다.
+- 현재 발견된 호출은 `src/editor/frame-editor.js`의 blob/data/runtime-asset 변환용 `fetch` 3건이며 선택 기능으로 분류된다.
+- `scripts/validate_phase8.py`에 원격 의존 게이트를 연결해 필수/미분류 원격 의존이 발견되면 validate를 실패 처리하도록 했다.
+- `scripts/run_harness_gate.py` 명령 흐름에도 원격 의존 게이트를 추가했다.
+
+### 이번 작업 검증
+- `python3 scripts/build_local_bundle.py`
+- `node --check app.bundle.js`
+- `python3 scripts/check_remote_dependency_gate.py`
+- `python3 scripts/validate_phase8.py`
+- `python3 scripts/run_harness_gate.py`
+
+### 남은 리스크
+- 원격 호출 분류는 현재 허용 목록 기반(정적 규칙)이라, 새로운 원격 API 사용이 추가되면 허용 목록/분류 규칙을 같이 갱신해야 한다.
